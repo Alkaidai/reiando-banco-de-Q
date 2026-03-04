@@ -4,7 +4,9 @@ export const STORAGE_KEYS = {
   currentUser: `${STORAGE_PREFIX}currentUser`,
   questionBank: `${STORAGE_PREFIX}questionBank`,
   topicsBank: `${STORAGE_PREFIX}topicsBank`,
-  version: `${STORAGE_PREFIX}seedVersion`
+  version: `${STORAGE_PREFIX}seedVersion`,
+  attempts: 'bq_attempts',
+  notebook: 'bq_notebook'
 };
 
 export const SEED_VERSION = '2.0.0';

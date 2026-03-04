@@ -74,7 +74,7 @@ textarea { min-height: 80px; width: 100%; }
 .option { display: block; padding: 8px; border: 1px solid var(--border); border-radius: 8px; }
 .option-correct { border-color: #83d3af; background: #ecfaf3; }
 .option-wrong { border-color: #f0a7ad; background: #fff2f3; }
-.actions-row { margin-top: 10px; display: flex; gap: 8px; align-items: center; }
+.actions-row { margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .feedback.ok { color: var(--ok); }
 .feedback.error { color: var(--danger); }
 .explanation { margin-top: 10px; padding: 10px; background: #f0f4ff; border-radius: 8px; }
@@ -86,10 +86,19 @@ textarea { min-height: 80px; width: 100%; }
 .menu { display: flex; gap: 8px; margin-bottom: 12px; }
 .menu button { background: #eef1fb; cursor: pointer; }
 .menu button.active { background: var(--primary); color: white; border-color: transparent; }
+.student-menu { margin-top: 12px; }
+.student-panel { display: block; }
 .panel-header { display: flex; justify-content: space-between; align-items: center; }
 .question-form { display: grid; gap: 8px; margin-bottom: 12px; }
 .table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .table th, .table td { border: 1px solid var(--border); padding: 6px; vertical-align: top; }
+
+.review-item { border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 8px; }
+.review-item p { margin: 0 0 4px; }
+.review-item small { color: var(--muted); display: block; margin-bottom: 8px; }
+
+.notebook-item { margin-bottom: 10px; }
+.notebook-item label { font-weight: 600; display: block; margin: 8px 0 4px; }
 
 .comments-admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
 .thread-item { width: 100%; text-align: left; background: #fff; border: 1px solid var(--border); margin-bottom: 8px; }

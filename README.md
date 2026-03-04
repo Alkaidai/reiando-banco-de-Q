@@ -47,21 +47,23 @@ admin.html
 ```
 
 ## Persistência localStorage
-Chaves prefixadas com `qb_`:
 - `qb_currentUser`
 - `qb_questionBank`
 - `qb_topicsBank`
 - `qb_seedVersion`
+- `bq_attempts`
+- `bq_notebook`
 
 ## Funcionalidades
 
 ### Aluno (`index.html`)
-- Cards de desempenho (respondidas, acertos, %).
-- Filtros: série, disciplina, dificuldade, tópico e busca.
-- Responder questão com botão confirmar, travando opções após resposta.
-- Feedback de acerto/erro + explicação pós-resposta.
-- Comentários por questão.
-- Botão **Admin** aparece apenas se `role=admin`.
+- Dashboard com Respondidas, Acertos e Aproveitamento (%), calculado via `bq_attempts`.
+- Mensagem de início: **Comece respondendo questões.** quando não há tentativas.
+- Top 3 tópicos mais fracos por taxa de erro.
+- Revisão imediata das últimas 10 questões erradas com botão **Refazer**.
+- Aba **Questões** com filtros: série, disciplina, dificuldade, tópico e busca.
+- Fluxo de resposta com confirmar/travar alternativas/feedback/explicação.
+- Aba **Caderno de erros** com notas editáveis e status (`pending`/`mastered`).
 
 ### Admin (`admin.html`)
 - Login admin obrigatório.

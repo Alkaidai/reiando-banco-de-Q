@@ -70,6 +70,28 @@ function normalizeQuestion(question) {
   };
 }
 
+function normalizeAttempt(attempt) {
+  return {
+    id: attempt?.id ?? Date.now(),
+    userId: String(attempt?.userId ?? ''),
+    questionId: String(attempt?.questionId ?? ''),
+    selectedIndex: Number(attempt?.selectedIndex ?? -1),
+    isCorrect: Boolean(attempt?.isCorrect),
+    answeredAt: attempt?.answeredAt ?? nowIso()
+  };
+}
+
+function normalizeNotebookItem(item) {
+  return {
+    userId: String(item?.userId ?? ''),
+    questionId: String(item?.questionId ?? ''),
+    status: item?.status === 'mastered' ? 'mastered' : 'pending',
+    whatIErred: String(item?.whatIErred ?? ''),
+    ruleInsight: String(item?.ruleInsight ?? ''),
+    updatedAt: item?.updatedAt ?? nowIso()
+  };
+}
+
 export async function initStorageFromSeeds() {
   const shouldReset = localStorage.getItem(STORAGE_KEYS.version) !== SEED_VERSION;
   const hasBank = !!localStorage.getItem(STORAGE_KEYS.questionBank);
@@ -165,6 +187,49 @@ export function setCommentStatus(questionId, commentId, status) {
   question.updatedAt = nowIso();
   saveQuestionBank(bank);
   return comment;
+}
+
+export function getAttempts(userId) {
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.attempts), []);
+  const list = Array.isArray(stored) ? stored.map(normalizeAttempt) : [];
+  if (!userId) return list;
+  return list.filter((item) => item.userId === userId);
+}
+
+export function addAttempt(attempt) {
+  const list = getAttempts();
+  const normalized = normalizeAttempt(attempt);
+  list.push(normalized);
+  localStorage.setItem(STORAGE_KEYS.attempts, JSON.stringify(list));
+  return normalized;
+}
+
+export function getNotebook(userId) {
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.notebook), []);
+  const list = Array.isArray(stored) ? stored.map(normalizeNotebookItem) : [];
+  if (!userId) return list;
+  return list.filter((item) => item.userId === userId);
+}
+
+export function upsertNotebookItem(userId, questionId, patch = {}) {
+  const all = getNotebook();
+  const index = all.findIndex((item) => item.userId === userId && item.questionId === questionId);
+  const nextItem = normalizeNotebookItem({
+    userId,
+    questionId,
+    ...(index >= 0 ? all[index] : {}),
+    ...patch,
+    updatedAt: nowIso()
+  });
+
+  if (index >= 0) {
+    all[index] = nextItem;
+  } else {
+    all.push(nextItem);
+  }
+
+  localStorage.setItem(STORAGE_KEYS.notebook, JSON.stringify(all));
+  return nextItem;
 }
 
 export function authenticate(username, password) {
