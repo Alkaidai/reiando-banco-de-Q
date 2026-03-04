@@ -1,53 +1,84 @@
-# Banco de Questões Escolar (Etapa 1)
+# Banco de Questões (MVP estático)
 
-Projeto estático (sem build) para GitHub Pages com:
+Projeto estático para GitHub Pages com duas áreas:
+- `/index.html` (Aluno)
+- `/admin.html` (Admin)
 
-- área do aluno em `/` (`index.html`)
-- área admin separada em `/admin.html`
+## Credenciais seed
+- Aluno: `aluno / aluno123`
+- Admin: `admin / admin123`
 
-## Login e roles
+## Estrutura
 
-- `aluno` / `aluno123` => `role: "student"`
-- `admin` / `admin123` => `role: "admin"`
+```txt
+/data
+  questions.seed.json
+  topics.seed.json
+/src
+  constants.js
+  storage.js
+  ui.js
+  app.js
+  admin.js
+/styles
+  styles.css
+index.html
+admin.html
+```
 
-A sessão é salva em `localStorage["currentUser"]` com formato:
+## Modelo de questão
 
 ```json
-{ "username": "admin", "role": "admin" }
+{
+  "id": "q_x",
+  "grade": "7EF|8EF|9EF|1EM",
+  "subject": "math|physics",
+  "difficulty": "easy|medium|hard",
+  "topicId": "string",
+  "statement": "string",
+  "options": ["string", "string"],
+  "correctIndex": 0,
+  "explanation": "string",
+  "status": "published|draft",
+  "createdAt": "ISOString",
+  "updatedAt": "ISOString",
+  "comments": []
+}
 ```
 
-## Banco de questões
+## Persistência localStorage
+Chaves prefixadas com `qb_`:
+- `qb_currentUser`
+- `qb_questionBank`
+- `qb_topicsBank`
+- `qb_seedVersion`
 
-As questões ficam em `localStorage["questionBank"]`.
+## Funcionalidades
 
-- O app sempre garante seed com **3 questões fixas** quando estiver vazio.
-- Cada questão já inclui estrutura para futuro: `comments: []`.
+### Aluno (`index.html`)
+- Cards de desempenho (respondidas, acertos, %).
+- Filtros: série, disciplina, dificuldade, tópico e busca.
+- Responder questão com botão confirmar, travando opções após resposta.
+- Feedback de acerto/erro + explicação pós-resposta.
+- Comentários por questão.
+- Botão **Admin** aparece apenas se `role=admin`.
 
-## Área do aluno (`index.html` + `app.js`)
+### Admin (`admin.html`)
+- Login admin obrigatório.
+- CRUD de questões com validações:
+  - campos obrigatórios,
+  - mínimo de 2 alternativas,
+  - índice da correta dentro do range.
+- Lista de questões com resumo e ações editar/excluir.
+- Moderação de comentários (responder, ocultar, reabrir).
+- Botão **Reset seed** para restaurar os dados de exemplo.
 
-- login;
-- filtros;
-- resolução e desempenho;
-- botão **Admin** no topo somente para `role=admin`.
-
-## Área admin (`admin.html` + `admin.js`)
-
-- acesso permitido somente para `role=admin`.
-- para não admin: tela **Acesso negado** + link voltar.
-- CRUD de questões:
-  - listar
-  - criar
-  - editar
-  - excluir
-- botão **Reset para exemplos** (restaura as 3 questões fixas).
-
-## Rodar localmente
+## Rodar local
 
 ```bash
-python -m http.server 4173
+python3 -m http.server 4173
 ```
 
-Abrir:
-
-- `http://localhost:4173/`
+Abra:
+- `http://localhost:4173/index.html`
 - `http://localhost:4173/admin.html`

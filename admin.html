@@ -1,57 +1,90 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Painel Admin - Banco de Questões</title>
-    <link rel="stylesheet" href="styles.css" />
+    <title>Banco de Questões - Admin</title>
+    <link rel="stylesheet" href="./styles/styles.css" />
   </head>
   <body>
-    <main class="container">
-      <header class="topbar card">
-        <strong>Área Administrativa</strong>
-        <div class="header-actions">
-          <a class="tab-btn" href="index.html">Voltar para Aluno</a>
-          <button id="adminLogoutBtn" class="tab-btn" type="button">Sair</button>
-        </div>
-      </header>
+    <header class="topbar">
+      <h1>Painel Admin</h1>
+      <div class="top-actions">
+        <a class="btn-secondary" href="./index.html">Área do Aluno</a>
+        <span id="sessionInfo" class="session"></span>
+        <button id="logoutBtn" class="btn-danger">Sair</button>
+      </div>
+    </header>
 
-      <section id="deniedSection" class="card hidden">
-        <h2>Acesso negado</h2>
-        <p>Esta área é exclusiva para administradores.</p>
-        <a class="primary-btn" href="index.html">Voltar</a>
+    <main class="container">
+      <section id="loginBlock" class="auth-card">
+        <h2>Login admin</h2>
+        <form id="adminLoginForm">
+          <input id="adminUser" placeholder="Usuário" required />
+          <input id="adminPass" type="password" placeholder="Senha" required />
+          <button class="btn-primary" type="submit">Entrar</button>
+        </form>
+        <p id="adminLoginFeedback" class="error-text"></p>
       </section>
 
-      <section id="adminSection" class="card hidden">
-        <div class="row-between">
-          <h2>Questões (CRUD)</h2>
-          <div class="inline-actions">
-            <button id="newQuestionBtn" class="primary-btn" type="button">Nova questão</button>
-            <button id="resetSeedBtn" class="tab-btn" type="button">Reset para exemplos</button>
-          </div>
-        </div>
+      <section id="adminApp" class="hidden">
+        <nav class="menu">
+          <button data-panel="dashboard" class="active">Dashboard</button>
+          <button data-panel="questions">Questões</button>
+          <button data-panel="comments">Comentários</button>
+        </nav>
 
-        <form id="questionForm" class="admin-grid hidden">
-          <input id="questionId" type="hidden" />
-          <label>Série<input id="qGrade" type="text" required /></label>
-          <label>Disciplina<input id="qSubject" type="text" required /></label>
-          <label>Dificuldade<input id="qDifficulty" type="text" required /></label>
-          <label class="full">Enunciado<textarea id="qText" required></textarea></label>
-          <label class="full">Alternativas (uma por linha)<textarea id="qOptions" required></textarea></label>
-          <label>Correta (índice 0,1,2...)
-            <input id="qCorrect" type="number" min="0" required />
-          </label>
-          <label class="full">Explicação<textarea id="qExplanation" required></textarea></label>
-          <div class="inline-actions full">
-            <button class="primary-btn" type="submit">Salvar</button>
-            <button id="cancelQuestionBtn" class="tab-btn" type="button">Cancelar</button>
-          </div>
-        </form>
+        <section id="dashboard" class="panel card">
+          <h2>Dashboard</h2>
+          <p>Use o menu para gerenciar questões e comentários.</p>
+        </section>
 
-        <div id="adminQuestionsList"></div>
+        <section id="questions" class="panel card hidden">
+          <div class="panel-header">
+            <h2>Questões</h2>
+            <div class="actions-row">
+              <button id="newQuestionBtn" class="btn-secondary">Nova questão</button>
+              <button id="resetSeedBtn" class="btn-danger">Reset seed</button>
+            </div>
+          </div>
+
+          <h3 id="formTitle">Nova questão</h3>
+          <form id="questionForm" class="question-form">
+            <select id="qGrade"></select>
+            <select id="qSubject"></select>
+            <select id="qDifficulty"></select>
+            <select id="qTopic"></select>
+            <select id="qStatus"><option value="published">published</option><option value="draft">draft</option></select>
+            <textarea id="qStatement" placeholder="Enunciado" required></textarea>
+            <textarea id="qOptions" placeholder="Uma alternativa por linha" required></textarea>
+            <input id="qCorrectIndex" type="number" min="0" placeholder="Índice da correta (começa em 0)" required />
+            <textarea id="qExplanation" placeholder="Explicação" required></textarea>
+            <button class="btn-primary" type="submit">Salvar questão</button>
+            <p id="formFeedback" class="error-text"></p>
+          </form>
+
+          <table class="table">
+            <thead><tr><th>Série</th><th>Disciplina</th><th>Dificuldade</th><th>Tópico</th><th>Enunciado</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="questionsTableBody"></tbody>
+          </table>
+        </section>
+
+        <section id="comments" class="panel card hidden">
+          <h2>Comentários</h2>
+          <select id="commentFilter">
+            <option value="all">Todos</option>
+            <option value="open">Em aberto</option>
+            <option value="answered">Respondidos</option>
+            <option value="hidden">Ocultos</option>
+          </select>
+          <div class="comments-admin-grid">
+            <div id="commentList" class="comment-list admin"></div>
+            <div id="threadDetails" class="thread-details"></div>
+          </div>
+        </section>
       </section>
     </main>
 
-    <script src="admin.js"></script>
+    <script type="module" src="./src/admin.js"></script>
   </body>
 </html>
