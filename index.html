@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Banco de Questões Escolar - Aluno</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="topbar card">
+        <strong>Banco de Questões Escolar</strong>
+        <div class="header-actions">
+          <span id="sessionInfo" class="muted">Visitante</span>
+          <a id="adminBtn" class="tab-btn hidden" href="admin.html">Admin</a>
+          <button id="showLoginBtn" class="primary-btn" type="button">Login</button>
+          <button id="logoutBtn" class="tab-btn hidden" type="button">Sair</button>
+        </div>
+      </header>
+
+      <section id="loginSection" class="card auth-card hidden">
+        <h2>Login</h2>
+        <form id="loginForm" class="auth-form">
+          <label>
+            Usuário
+            <input id="usernameInput" type="text" required />
+          </label>
+          <label>
+            Senha
+            <input id="passwordInput" type="password" required />
+          </label>
+          <button class="primary-btn" type="submit">Entrar</button>
+          <p class="muted">aluno/aluno123 ou admin/admin123</p>
+          <p id="loginError" class="error-text"></p>
+        </form>
+      </section>
+
+      <section class="filters card">
+        <h2>Filtros</h2>
+        <div class="grid">
+          <label>
+            Série
+            <select id="gradeFilter"></select>
+          </label>
+          <label>
+            Disciplina
+            <select id="subjectFilter"></select>
+          </label>
+          <label>
+            Buscar
+            <input id="searchFilter" type="text" placeholder="Ex.: frações, energia" />
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Desempenho</h2>
+        <div id="stats"></div>
+      </section>
+
+      <section class="card">
+        <h2>Questões</h2>
+        <div id="questionsList"></div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

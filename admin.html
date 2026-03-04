@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel Admin - Banco de Questões</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="topbar card">
+        <strong>Área Administrativa</strong>
+        <div class="header-actions">
+          <a class="tab-btn" href="index.html">Voltar para Aluno</a>
+          <button id="adminLogoutBtn" class="tab-btn" type="button">Sair</button>
+        </div>
+      </header>
+
+      <section id="deniedSection" class="card hidden">
+        <h2>Acesso negado</h2>
+        <p>Esta área é exclusiva para administradores.</p>
+        <a class="primary-btn" href="index.html">Voltar</a>
+      </section>
+
+      <section id="adminSection" class="card hidden">
+        <div class="row-between">
+          <h2>Questões (CRUD)</h2>
+          <div class="inline-actions">
+            <button id="newQuestionBtn" class="primary-btn" type="button">Nova questão</button>
+            <button id="resetSeedBtn" class="tab-btn" type="button">Reset para exemplos</button>
+          </div>
+        </div>
+
+        <form id="questionForm" class="admin-grid hidden">
+          <input id="questionId" type="hidden" />
+          <label>Série<input id="qGrade" type="text" required /></label>
+          <label>Disciplina<input id="qSubject" type="text" required /></label>
+          <label>Dificuldade<input id="qDifficulty" type="text" required /></label>
+          <label class="full">Enunciado<textarea id="qText" required></textarea></label>
+          <label class="full">Alternativas (uma por linha)<textarea id="qOptions" required></textarea></label>
+          <label>Correta (índice 0,1,2...)
+            <input id="qCorrect" type="number" min="0" required />
+          </label>
+          <label class="full">Explicação<textarea id="qExplanation" required></textarea></label>
+          <div class="inline-actions full">
+            <button class="primary-btn" type="submit">Salvar</button>
+            <button id="cancelQuestionBtn" class="tab-btn" type="button">Cancelar</button>
+          </div>
+        </form>
+
+        <div id="adminQuestionsList"></div>
+      </section>
+    </main>
+
+    <script src="admin.js"></script>
+  </body>
+</html>
