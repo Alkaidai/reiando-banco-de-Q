@@ -31,12 +31,36 @@
         <nav class="menu">
           <button data-panel="dashboard" class="active">Dashboard</button>
           <button data-panel="questions">Questões</button>
+          <button data-panel="users">Usuários</button>
+          <button data-panel="notebook">Caderno</button>
           <button data-panel="comments">Comentários</button>
         </nav>
 
         <section id="dashboard" class="panel card">
           <h2>Dashboard</h2>
-          <p>Use o menu para gerenciar questões e comentários.</p>
+          <div id="adminDashboardCards" class="admin-stats-grid"></div>
+          <div class="admin-dashboard-grid">
+            <article class="card">
+              <h3>Questões por série</h3>
+              <ul id="dashByGrade"></ul>
+            </article>
+            <article class="card">
+              <h3>Questões por disciplina</h3>
+              <ul id="dashBySubject"></ul>
+            </article>
+            <article class="card">
+              <h3>Questões por dificuldade</h3>
+              <ul id="dashByDifficulty"></ul>
+            </article>
+            <article class="card">
+              <h3>Top 5 tópicos mais errados</h3>
+              <ol id="dashWorstTopics"></ol>
+            </article>
+          </div>
+          <article class="card">
+            <h3>Top 10 questões com maior % de erro</h3>
+            <div id="dashWorstQuestions"></div>
+          </article>
         </section>
 
         <section id="questions" class="panel card hidden">
@@ -67,6 +91,32 @@
             <thead><tr><th>Série</th><th>Disciplina</th><th>Dificuldade</th><th>Tópico</th><th>Enunciado</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody id="questionsTableBody"></tbody>
           </table>
+        </section>
+
+        <section id="users" class="panel card hidden">
+          <h2>Usuários / Inspeção</h2>
+          <div class="admin-users-grid">
+            <div>
+              <h3>Lista de usuários</h3>
+              <div id="usersList"></div>
+            </div>
+            <div id="userInspectionDetails" class="thread-details">
+              <p class="muted">Selecione um usuário para inspecionar.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="notebook" class="panel card hidden">
+          <h2>Caderno (inspeção)</h2>
+          <div class="actions-row">
+            <select id="notebookStatusFilter">
+              <option value="all">Todos</option>
+              <option value="pending">Pendente</option>
+              <option value="mastered">Dominado</option>
+            </select>
+            <input id="notebookSearchFilter" placeholder="Buscar texto" />
+          </div>
+          <div id="adminNotebookList"></div>
         </section>
 
         <section id="comments" class="panel card hidden">

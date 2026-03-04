@@ -149,3 +149,43 @@ textarea { min-height: 80px; width: 100%; }
   .stats-grid { grid-template-columns: 1fr; }
   .comments-admin-grid { grid-template-columns: 1fr; }
 }
+
+
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.admin-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.admin-users-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 12px;
+}
+
+.active-user {
+  border-color: #91a9ff;
+  background: #eef3ff;
+}
+
+.question-row-highlight td {
+  background: #fff6d6;
+}
+
+#usersList .thread-item {
+  margin-bottom: 6px;
+}
+
+@media (max-width: 900px) {
+  .admin-stats-grid { grid-template-columns: 1fr 1fr; }
+  .admin-dashboard-grid { grid-template-columns: 1fr; }
+  .admin-users-grid { grid-template-columns: 1fr; }
+}

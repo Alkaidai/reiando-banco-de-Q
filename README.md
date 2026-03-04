@@ -69,6 +69,10 @@ admin.html
 
 ### Admin (`admin.html`)
 - Login admin obrigatório.
+- Dashboard com visão geral: total de questões, publicadas/rascunho, distribuições por série/disciplina/dificuldade, usuários, tentativas e acerto global.
+- Ranking global: tópicos mais errados e questões com maior % de erro.
+- Aba **Usuários** com inspeção individual (respondidas, acertos, aproveitamento, tópicos fracos e tentativas recentes).
+- Aba **Caderno** para inspeção do notebook do usuário selecionado, com filtros e atalho para abrir questão.
 - CRUD de questões com validações:
   - campos obrigatórios,
   - mínimo de 2 alternativas,
