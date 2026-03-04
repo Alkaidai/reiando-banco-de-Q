@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Banco de Questões Escolar</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>Banco de Questões Escolar</h1>
+        <p>Questões de Matemática e Física para 7º, 8º, 9º ano e 1º ano do Ensino Médio.</p>
+      </header>
+
+      <section class="filters card">
+        <h2>Filtros</h2>
+        <div class="grid">
+          <label>
+            Série
+            <select id="gradeFilter"></select>
+          </label>
+          <label>
+            Disciplina
+            <select id="subjectFilter"></select>
+          </label>
+          <label>
+            Dificuldade
+            <select id="difficultyFilter"></select>
+          </label>
+          <label>
+            Buscar termo
+            <input id="searchFilter" type="text" placeholder="Ex.: fração, força, velocidade" />
+          </label>
+        </div>
+      </section>
+
+      <section class="stats card">
+        <h2>Seu desempenho</h2>
+        <div id="stats"></div>
+      </section>
+
+      <section class="card">
+        <h2>Questões</h2>
+        <div id="questionsList"></div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
