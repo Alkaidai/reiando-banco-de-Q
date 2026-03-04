@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Banco de Questões Escolar - Aluno</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="topbar card">
+        <strong>Banco de Questões Escolar · Área do Aluno</strong>
+        <div class="header-actions">
+          <span id="welcomeText" class="muted"></span>
+          <a id="adminLinkBtn" class="tab-btn hidden" href="admin.html">Admin</a>
+          <button id="topLoginBtn" class="primary-btn" type="button">Login</button>
+          <button id="logoutBtn" class="tab-btn hidden" type="button">Sair</button>
+        </div>
+      </header>
+
+      <section id="loginSection" class="card auth-card hidden">
+        <h1>Login</h1>
+        <p>Entre para resolver questões e acompanhar desempenho.</p>
+        <form id="loginForm" class="auth-form">
+          <label>
+            Usuário
+            <input id="usernameInput" type="text" placeholder="aluno ou admin" required />
+          </label>
+          <label>
+            Senha
+            <input id="passwordInput" type="password" placeholder="Digite sua senha" required />
+          </label>
+          <button class="primary-btn" type="submit">Entrar</button>
+          <p class="muted">Credenciais teste: aluno/aluno123 e admin/admin123</p>
+          <p id="loginFeedback" class="error-text"></p>
+        </form>
+      </section>
+
+      <section id="studentSection">
+        <section class="filters card">
+          <h2>Filtros</h2>
+          <div class="grid">
+            <label>
+              Série
+              <select id="gradeFilter"></select>
+            </label>
+            <label>
+              Disciplina
+              <select id="subjectFilter"></select>
+            </label>
+            <label>
+              Dificuldade
+              <select id="difficultyFilter"></select>
+            </label>
+            <label>
+              Buscar termo
+              <input id="searchFilter" type="text" placeholder="Ex.: fração, força, velocidade" />
+            </label>
+          </div>
+        </section>
+
+        <section class="stats card">
+          <h2>Seu desempenho</h2>
+          <div id="stats"></div>
+        </section>
+
+        <section class="card">
+          <h2>Questões</h2>
+          <div id="questionsList"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
