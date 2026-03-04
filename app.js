@@ -1,6 +1,11 @@
 const letters = ["A", "B", "C", "D", "E", "F"];
 const tabs = ["gabarito", "aulas", "comentarios", "caderno", "erro"];
 
+const users = [
+  { username: "aluno", password: "aluno123", role: "student", label: "Aluno" },
+  { username: "admin", password: "admin123", role: "admin", label: "Administrador" }
+];
+
 const defaultQuestions = [
   {
     id: 1,
@@ -19,67 +24,48 @@ const defaultQuestions = [
   },
   {
     id: 2,
-    grade: "8º ano",
-    subject: "Matemática",
-    topic: "Equação do 1º grau",
+    grade: "9º ano",
+    subject: "Física",
+    topic: "Velocidade média",
     difficulty: "Média",
-    text: "Resolva: 2x + 5 = 17.",
-    options: ["x = 5", "x = 6", "x = 7", "x = 8"],
-    correct: 1,
-    explanation: "Isolando x: 2x = 17 - 5 = 12, logo x = 6.",
-    solutionVideo: "https://www.youtube.com/watch?v=7f8s6fG3v4Q",
-    lessons: [
-      { title: "Introdução a equações", url: "https://pt.khanacademy.org/math/algebra/one-variable-linear-equations" }
-    ]
+    text: "Se um corpo percorre 100 m em 20 s, sua velocidade média é:",
+    options: ["2 m/s", "4 m/s", "5 m/s", "10 m/s"],
+    correct: 2,
+    explanation: "Aplicamos v = Δs/Δt. Então v = 100/20 = 5 m/s.",
+    solutionVideo: "https://www.youtube.com/watch?v=i8N0k8J4xjQ",
+    lessons: [{ title: "Movimento e velocidade", url: "https://pt.khanacademy.org/science/physics/one-dimensional-motion" }]
   }
 ];
 
-const users = [
-  { username: "aluno", password: "aluno123", role: "student", label: "Aluno" },
-  { username: "admin", password: "admin123", role: "admin", label: "Administrador" }
-];
-
 const storage = {
+  questionBank: "questionBank",
+  lessonsBank: "lessonsBank",
   comments: "question_comments",
   notes: "question_notes",
   reports: "question_reports",
-  customQuestions: "custom_questions",
   session: "user_session"
 };
 
-let questions = buildQuestions();
-const answers = new Map();
-let activeTabByQuestion = Object.fromEntries(questions.map((q) => [q.id, "gabarito"]));
-const comments = loadObject(storage.comments);
-const notes = loadObject(storage.notes);
-const reports = loadObject(storage.reports);
+function seedQuestionBank() {
+  const existing = localStorage.getItem(storage.questionBank);
+  if (!existing) {
+    localStorage.setItem(storage.questionBank, JSON.stringify(defaultQuestions));
+  }
+}
 
-const loginSection = document.getElementById("loginSection");
-const appSection = document.getElementById("appSection");
-const loginForm = document.getElementById("loginForm");
-const loginFeedback = document.getElementById("loginFeedback");
-const usernameInput = document.getElementById("usernameInput");
-const passwordInput = document.getElementById("passwordInput");
-const logoutBtn = document.getElementById("logoutBtn");
-const welcomeText = document.getElementById("welcomeText");
-const topLoginBtn = document.getElementById("topLoginBtn");
-
-const gradeFilter = document.getElementById("gradeFilter");
-const subjectFilter = document.getElementById("subjectFilter");
-const difficultyFilter = document.getElementById("difficultyFilter");
-const searchFilter = document.getElementById("searchFilter");
-const questionsList = document.getElementById("questionsList");
-const stats = document.getElementById("stats");
-
-const adminSection = document.getElementById("adminSection");
-const adminQuestionForm = document.getElementById("adminQuestionForm");
-const adminFeedback = document.getElementById("adminFeedback");
+function loadQuestionBank() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(storage.questionBank) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 function loadObject(key) {
   try {
-    const data = localStorage.getItem(key);
-    const parsed = data ? JSON.parse(data) : {};
-    return typeof parsed === "object" && parsed ? parsed : {};
+    const parsed = JSON.parse(localStorage.getItem(key) || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
     return {};
   }
@@ -89,20 +75,58 @@ function saveObject(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-function buildQuestions() {
-  const custom = localStorage.getItem(storage.customQuestions);
-  const parsed = custom ? JSON.parse(custom) : [];
-  return [...defaultQuestions, ...parsed];
+function getSession() {
+  try {
+    return JSON.parse(localStorage.getItem(storage.session) || "null");
+  } catch {
+    return null;
+  }
 }
 
+function setSession(user) {
+  localStorage.setItem(storage.session, JSON.stringify(user));
+}
+
+function clearSession() {
+  localStorage.removeItem(storage.session);
+}
+
+seedQuestionBank();
+let questions = loadQuestionBank();
+const answers = new Map();
+let activeTabByQuestion = Object.fromEntries(questions.map((q) => [q.id, "gabarito"]));
+const comments = loadObject(storage.comments);
+const notes = loadObject(storage.notes);
+const reports = loadObject(storage.reports);
+
+const loginSection = document.getElementById("loginSection");
+const studentSection = document.getElementById("studentSection");
+const loginForm = document.getElementById("loginForm");
+const loginFeedback = document.getElementById("loginFeedback");
+const usernameInput = document.getElementById("usernameInput");
+const passwordInput = document.getElementById("passwordInput");
+const topLoginBtn = document.getElementById("topLoginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const adminLinkBtn = document.getElementById("adminLinkBtn");
+const welcomeText = document.getElementById("welcomeText");
+
+const gradeFilter = document.getElementById("gradeFilter");
+const subjectFilter = document.getElementById("subjectFilter");
+const difficultyFilter = document.getElementById("difficultyFilter");
+const searchFilter = document.getElementById("searchFilter");
+const stats = document.getElementById("stats");
+const questionsList = document.getElementById("questionsList");
+
 function uniqueValues(key) {
-  return [...new Set(questions.map((q) => q[key]))];
+  return [...new Set(questions.map((q) => q[key]))].filter(Boolean);
 }
 
 function fillSelect(select, values) {
+  const current = select.value;
   select.innerHTML = `<option value="">Todos</option>${values
     .map((value) => `<option value="${value}">${value}</option>`)
     .join("")}`;
+  select.value = values.includes(current) ? current : "";
 }
 
 function refreshFilters() {
@@ -121,7 +145,7 @@ function filteredQuestions() {
     const bySearch =
       !search ||
       q.text.toLowerCase().includes(search) ||
-      q.topic.toLowerCase().includes(search) ||
+      (q.topic || "").toLowerCase().includes(search) ||
       q.subject.toLowerCase().includes(search);
 
     return byGrade && bySubject && byDifficulty && bySearch;
@@ -150,7 +174,6 @@ function answerQuestion(questionId) {
   const question = questions.find((q) => q.id === questionId);
   const selectedIndex = Number(selected.value);
   answers.set(questionId, { selectedIndex, correct: selectedIndex === question.correct });
-
   renderQuestions();
   updateStats();
 }
@@ -159,7 +182,6 @@ function setActiveTab(questionId, tab) {
   if (!tabs.includes(tab)) {
     return;
   }
-
   activeTabByQuestion[questionId] = tab;
   renderQuestions();
 }
@@ -167,9 +189,7 @@ function setActiveTab(questionId, tab) {
 function addComment(questionId) {
   const input = document.getElementById(`comment_input_${questionId}`);
   const value = input.value.trim();
-
   if (!value) {
-    alert("Digite um comentário antes de salvar.");
     return;
   }
 
@@ -180,18 +200,16 @@ function addComment(questionId) {
 }
 
 function saveNote(questionId) {
-  const textarea = document.getElementById(`note_input_${questionId}`);
-  notes[questionId] = textarea.value;
+  const input = document.getElementById(`note_input_${questionId}`);
+  notes[questionId] = input.value;
   saveObject(storage.notes, notes);
-  alert("Anotação salva com sucesso.");
+  alert("Anotação salva.");
 }
 
 function reportError(questionId) {
   const input = document.getElementById(`report_input_${questionId}`);
   const value = input.value.trim();
-
   if (!value) {
-    alert("Descreva o erro antes de enviar.");
     return;
   }
 
@@ -205,7 +223,6 @@ function youtubeEmbedUrl(url) {
   if (!url) {
     return "";
   }
-
   const watchMatch = url.match(/[?&]v=([^&]+)/);
   const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
   const id = watchMatch?.[1] || shortMatch?.[1];
@@ -218,83 +235,58 @@ function renderTabContent(q, tab) {
     if (!answer) {
       return "<p class='muted'>Responda a questão para liberar o gabarito comentado.</p>";
     }
-
-    const status = answer.correct ? "✅ Você acertou." : "❌ Você errou.";
     const embed = youtubeEmbedUrl(q.solutionVideo);
-
     return `
       <h4>Gabarito comentado</h4>
-      <p><strong>Resposta correta:</strong> ${letters[q.correct]}</p>
-      <p>${status}</p>
-      <p><strong>Explicação:</strong> ${q.explanation}</p>
+      <p><strong>Resposta correta:</strong> ${letters[q.correct] || q.correct + 1}</p>
+      <p><strong>Explicação:</strong> ${q.explanation || "Sem explicação cadastrada."}</p>
       ${
         embed
-          ? `<div class="video-wrapper"><iframe src="${embed}" title="Vídeo resolução questão ${q.id}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`
-          : "<p class='muted'>Sem vídeo de resolução cadastrado.</p>"
+          ? `<div class="video-wrapper"><iframe src="${embed}" title="Vídeo questão ${q.id}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`
+          : "<p class='muted'>Sem vídeo cadastrado.</p>"
       }
     `;
   }
 
   if (tab === "aulas") {
-    return `
-      <h4>Aulas do assunto (${q.topic})</h4>
-      <ul class="list">
-        ${q.lessons
-          .map(
-            (lesson) =>
-              `<li><a href="${lesson.url}" target="_blank" rel="noopener noreferrer">${lesson.title}</a></li>`
-          )
-          .join("")}
-      </ul>
-    `;
+    const lessons = Array.isArray(q.lessons) ? q.lessons : [];
+    if (!lessons.length) {
+      return "<p class='muted'>Sem aulas cadastradas para esta questão.</p>";
+    }
+    return `<h4>Aulas</h4><ul class="list">${lessons
+      .map((lesson) => `<li><a href="${lesson.url}" target="_blank" rel="noopener noreferrer">${lesson.title}</a></li>`)
+      .join("")}</ul>`;
   }
 
   if (tab === "comentarios") {
-    const questionComments = comments[q.id] || [];
+    const list = comments[q.id] || [];
     return `
       <h4>Comentários</h4>
-      <textarea id="comment_input_${q.id}" placeholder="Escreva um comentário sobre esta questão..."></textarea>
-      <div class="inline-actions">
-        <button class="primary-btn" onclick="addComment(${q.id})">Salvar comentário</button>
-      </div>
-      ${
-        questionComments.length
-          ? `<ul class="list">${questionComments.map((c) => `<li>${c}</li>`).join("")}</ul>`
-          : "<p class='muted'>Nenhum comentário ainda.</p>"
-      }
+      <textarea id="comment_input_${q.id}" placeholder="Escreva aqui..."></textarea>
+      <div class="inline-actions"><button class="primary-btn" onclick="addComment(${q.id})">Salvar comentário</button></div>
+      ${list.length ? `<ul class="list">${list.map((item) => `<li>${item}</li>`).join("")}</ul>` : "<p class='muted'>Nenhum comentário.</p>"}
     `;
   }
 
   if (tab === "caderno") {
     return `
-      <h4>Caderno de anotação</h4>
-      <p class="muted">Use este espaço para registrar fórmulas, dúvidas e atalhos.</p>
-      <textarea id="note_input_${q.id}" placeholder="Minhas anotações...">${notes[q.id] || ""}</textarea>
-      <div class="inline-actions">
-        <button class="primary-btn" onclick="saveNote(${q.id})">Salvar anotação</button>
-      </div>
+      <h4>Caderno</h4>
+      <textarea id="note_input_${q.id}" placeholder="Suas anotações...">${notes[q.id] || ""}</textarea>
+      <div class="inline-actions"><button class="primary-btn" onclick="saveNote(${q.id})">Salvar anotação</button></div>
     `;
   }
 
-  const questionReports = reports[q.id] || [];
+  const list = reports[q.id] || [];
   return `
     <h4>Notificar erro</h4>
-    <p class="muted">Ex.: enunciado incompleto, alternativa incorreta, erro de digitação.</p>
-    <textarea id="report_input_${q.id}" placeholder="Descreva o erro encontrado..."></textarea>
-    <div class="inline-actions">
-      <button class="primary-btn" onclick="reportError(${q.id})">Enviar notificação</button>
-    </div>
-    ${
-      questionReports.length
-        ? `<p><strong>Notificações enviadas nesta questão:</strong> ${questionReports.length}</p>`
-        : "<p class='muted'>Nenhuma notificação enviada ainda.</p>"
-    }
+    <textarea id="report_input_${q.id}" placeholder="Descreva o erro..."></textarea>
+    <div class="inline-actions"><button class="primary-btn" onclick="reportError(${q.id})">Enviar</button></div>
+    ${list.length ? `<p><strong>Notificações enviadas:</strong> ${list.length}</p>` : "<p class='muted'>Nenhuma notificação ainda.</p>"}
   `;
 }
 
 function renderQuestions() {
   const list = filteredQuestions();
-
   if (!list.length) {
     questionsList.innerHTML = "<p>Nenhuma questão encontrada para os filtros informados.</p>";
     return;
@@ -308,9 +300,8 @@ function renderQuestions() {
       return `
         <article class="question">
           <div class="question-head">
-            <div class="meta">${q.grade} · ${q.subject} · ${q.topic} · ${q.difficulty}</div>
+            <div class="meta">${q.grade} · ${q.subject} · ${q.topic || "Sem assunto"} · ${q.difficulty}</div>
           </div>
-
           <div class="question-body">
             <p>${q.text}</p>
             <div class="options">
@@ -319,9 +310,7 @@ function renderQuestions() {
                   (option, idx) => `
                     <label class="option-item">
                       <span class="option-letter">${letters[idx] || idx + 1}</span>
-                      <input type="radio" name="q_${q.id}" value="${idx}" ${
-                        answer && answer.selectedIndex === idx ? "checked" : ""
-                      } />
+                      <input type="radio" name="q_${q.id}" value="${idx}" ${answer && answer.selectedIndex === idx ? "checked" : ""} />
                       <span>${option}</span>
                     </label>
                   `
@@ -330,7 +319,6 @@ function renderQuestions() {
             </div>
             <button class="primary-btn" onclick="answerQuestion(${q.id})">Responder</button>
           </div>
-
           <div class="question-tabs">
             <div class="tab-buttons">
               <button class="tab-btn ${activeTab === "gabarito" ? "active" : ""}" onclick="setActiveTab(${q.id}, 'gabarito')">Gabarito Comentado</button>
@@ -347,104 +335,22 @@ function renderQuestions() {
     .join("");
 }
 
-function parseLessons(raw) {
-  return raw
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [title, url] = line.split("|").map((part) => part.trim());
-      return { title, url };
-    })
-    .filter((lesson) => lesson.title && lesson.url);
-}
-
-function onAdminSubmit(event) {
-  event.preventDefault();
-
-  const options = document.getElementById("adminOptions").value
-    .split("\n")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  const correct = Number(document.getElementById("adminCorrect").value);
-
-  if (options.length < 2) {
-    adminFeedback.textContent = "Informe pelo menos 2 alternativas.";
-    return;
-  }
-
-  if (Number.isNaN(correct) || correct < 0 || correct >= options.length) {
-    adminFeedback.textContent = "Índice da resposta correta inválido.";
-    return;
-  }
-
-  const newQuestion = {
-    id: Math.max(...questions.map((q) => q.id), 0) + 1,
-    grade: document.getElementById("adminGrade").value.trim(),
-    subject: document.getElementById("adminSubject").value.trim(),
-    topic: document.getElementById("adminTopic").value.trim(),
-    difficulty: document.getElementById("adminDifficulty").value.trim(),
-    text: document.getElementById("adminText").value.trim(),
-    options,
-    correct,
-    explanation: document.getElementById("adminExplanation").value.trim(),
-    solutionVideo: document.getElementById("adminVideo").value.trim(),
-    lessons: parseLessons(document.getElementById("adminLessons").value)
-  };
-
-  if (!newQuestion.grade || !newQuestion.subject || !newQuestion.topic || !newQuestion.text) {
-    adminFeedback.textContent = "Preencha os campos obrigatórios da questão.";
-    return;
-  }
-
-  const custom = JSON.parse(localStorage.getItem(storage.customQuestions) || "[]");
-  custom.push(newQuestion);
-  localStorage.setItem(storage.customQuestions, JSON.stringify(custom));
-
-  questions = buildQuestions();
-  activeTabByQuestion = Object.fromEntries(questions.map((q) => [q.id, "gabarito"]));
-  refreshFilters();
-  renderQuestions();
-  adminQuestionForm.reset();
-  adminFeedback.textContent = "Questão cadastrada com sucesso.";
-}
-
-function setSession(user) {
-  localStorage.setItem(storage.session, JSON.stringify(user));
-}
-
-function getSession() {
-  const session = localStorage.getItem(storage.session);
-  return session ? JSON.parse(session) : null;
-}
-
-function clearSession() {
-  localStorage.removeItem(storage.session);
+function showLogin() {
+  loginSection.classList.remove("hidden");
+  usernameInput.focus();
 }
 
 function applyAuthUI(session) {
   const logged = Boolean(session);
-  loginSection.classList.toggle("hidden", logged);
-  appSection.classList.toggle("hidden", !logged);
   topLoginBtn.classList.toggle("hidden", logged);
+  logoutBtn.classList.toggle("hidden", !logged);
+  loginSection.classList.toggle("hidden", !logged);
+  welcomeText.textContent = logged ? `Logado como: ${session.username}` : "Visitante";
+  adminLinkBtn.classList.toggle("hidden", !logged || session.role !== "admin");
 
-  if (!logged) {
-    return;
+  if (logged) {
+    studentSection.classList.remove("hidden");
   }
-
-  welcomeText.textContent = `Logado como: ${session.username} (${session.label})`;
-  adminSection.classList.toggle("hidden", session.role !== "admin");
-  refreshFilters();
-  updateStats();
-  renderQuestions();
-}
-
-
-function onTopLoginClick() {
-  loginSection.classList.remove("hidden");
-  usernameInput.focus();
-  loginSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function onLogin(event) {
@@ -453,7 +359,7 @@ function onLogin(event) {
 
   const username = usernameInput.value.trim();
   const password = passwordInput.value.trim();
-  const user = users.find((item) => item.username === username && item.password === password);
+  const user = users.find((u) => u.username === username && u.password === password);
 
   if (!user) {
     loginFeedback.textContent = "Usuário ou senha inválidos.";
@@ -470,15 +376,17 @@ function onLogout() {
   applyAuthUI(null);
 }
 
-[gradeFilter, subjectFilter, difficultyFilter, searchFilter].forEach((element) => {
-  element.addEventListener("input", renderQuestions);
-});
+[gradeFilter, subjectFilter, difficultyFilter, searchFilter].forEach((el) => el.addEventListener("input", renderQuestions));
 
 loginForm.addEventListener("submit", onLogin);
+topLoginBtn.addEventListener("click", showLogin);
 logoutBtn.addEventListener("click", onLogout);
-topLoginBtn.addEventListener("click", onTopLoginClick);
-adminQuestionForm.addEventListener("submit", onAdminSubmit);
 
+questions = loadQuestionBank();
+activeTabByQuestion = Object.fromEntries(questions.map((q) => [q.id, "gabarito"]));
+refreshFilters();
+updateStats();
+renderQuestions();
 applyAuthUI(getSession());
 
 window.answerQuestion = answerQuestion;
