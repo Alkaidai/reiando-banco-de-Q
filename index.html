@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Banco de Questões - Aluno</title>
+    <link rel="stylesheet" href="./styles/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>Banco de Questões</h1>
+      <div class="top-actions">
+        <a id="adminLink" class="btn-secondary hidden" href="./admin.html">Admin</a>
+        <span id="sessionInfo" class="session"></span>
+        <button id="logoutBtn" class="btn-danger">Sair</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="auth-card">
+        <h2>Login</h2>
+        <form id="loginForm">
+          <input id="username" placeholder="Usuário" required />
+          <input id="password" type="password" placeholder="Senha" required />
+          <button class="btn-primary" type="submit">Entrar</button>
+        </form>
+        <p id="loginFeedback" class="error-text"></p>
+      </section>
+
+      <section class="stats-grid">
+        <article class="stat-card"><p>Respondidas</p><strong id="statAnswered">0</strong></article>
+        <article class="stat-card"><p>Acertos</p><strong id="statCorrect">0</strong></article>
+        <article class="stat-card"><p>Aproveitamento</p><strong id="statRate">0%</strong></article>
+      </section>
+
+      <section class="filters card">
+        <h3>Filtros</h3>
+        <div class="filter-grid">
+          <select id="filterGrade"></select>
+          <select id="filterSubject"></select>
+          <select id="filterDifficulty"></select>
+          <select id="filterTopicId"></select>
+          <input id="filterSearch" placeholder="Buscar" />
+        </div>
+      </section>
+
+      <section id="questionsList" class="questions-list"></section>
+    </main>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
