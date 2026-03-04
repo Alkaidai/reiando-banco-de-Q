@@ -1,7 +1,7 @@
-const letters = ["A", "B", "C", "D", "E"];
+const letters = ["A", "B", "C", "D", "E", "F"];
 const tabs = ["gabarito", "aulas", "comentarios", "caderno", "erro"];
 
-const questions = [
+const defaultQuestions = [
   {
     id: 1,
     grade: "7º ano",
@@ -31,51 +31,38 @@ const questions = [
     lessons: [
       { title: "Introdução a equações", url: "https://pt.khanacademy.org/math/algebra/one-variable-linear-equations" }
     ]
-  },
-  {
-    id: 3,
-    grade: "9º ano",
-    subject: "Física",
-    topic: "Velocidade média",
-    difficulty: "Média",
-    text: "Se um corpo percorre 100 m em 20 s, sua velocidade média é:",
-    options: ["2 m/s", "4 m/s", "5 m/s", "10 m/s"],
-    correct: 2,
-    explanation: "Aplicamos v = Δs/Δt. Então v = 100/20 = 5 m/s.",
-    solutionVideo: "https://www.youtube.com/watch?v=i8N0k8J4xjQ",
-    lessons: [
-      { title: "Movimento e velocidade", url: "https://pt.khanacademy.org/science/physics/one-dimensional-motion" }
-    ]
-  },
-  {
-    id: 4,
-    grade: "1º ano EM",
-    subject: "Física",
-    topic: "Leis de Newton",
-    difficulty: "Difícil",
-    text: "Qual é a unidade de força no SI?",
-    options: ["Watt", "Joule", "Pascal", "Newton"],
-    correct: 3,
-    explanation: "No SI, força é medida em newton (N).",
-    solutionVideo: "https://www.youtube.com/watch?v=kKKM8Y-u7ds",
-    lessons: [
-      { title: "Força e Leis de Newton", url: "https://pt.khanacademy.org/science/physics/forces-newtons-laws" }
-    ]
   }
 ];
 
-const answers = new Map();
-const activeTabByQuestion = Object.fromEntries(questions.map((q) => [q.id, "gabarito"]));
+const users = [
+  { username: "aluno", password: "aluno123", role: "student", label: "Aluno" },
+  { username: "admin", password: "admin123", role: "admin", label: "Administrador" }
+];
 
 const storage = {
   comments: "question_comments",
   notes: "question_notes",
-  reports: "question_reports"
+  reports: "question_reports",
+  customQuestions: "custom_questions",
+  session: "user_session"
 };
 
+let questions = buildQuestions();
+const answers = new Map();
+let activeTabByQuestion = Object.fromEntries(questions.map((q) => [q.id, "gabarito"]));
 const comments = loadObject(storage.comments);
 const notes = loadObject(storage.notes);
 const reports = loadObject(storage.reports);
+
+const loginSection = document.getElementById("loginSection");
+const appSection = document.getElementById("appSection");
+const loginForm = document.getElementById("loginForm");
+const loginFeedback = document.getElementById("loginFeedback");
+const usernameInput = document.getElementById("usernameInput");
+const passwordInput = document.getElementById("passwordInput");
+const logoutBtn = document.getElementById("logoutBtn");
+const welcomeText = document.getElementById("welcomeText");
+const topLoginBtn = document.getElementById("topLoginBtn");
 
 const gradeFilter = document.getElementById("gradeFilter");
 const subjectFilter = document.getElementById("subjectFilter");
@@ -83,6 +70,10 @@ const difficultyFilter = document.getElementById("difficultyFilter");
 const searchFilter = document.getElementById("searchFilter");
 const questionsList = document.getElementById("questionsList");
 const stats = document.getElementById("stats");
+
+const adminSection = document.getElementById("adminSection");
+const adminQuestionForm = document.getElementById("adminQuestionForm");
+const adminFeedback = document.getElementById("adminFeedback");
 
 function loadObject(key) {
   try {
@@ -98,6 +89,12 @@ function saveObject(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function buildQuestions() {
+  const custom = localStorage.getItem(storage.customQuestions);
+  const parsed = custom ? JSON.parse(custom) : [];
+  return [...defaultQuestions, ...parsed];
+}
+
 function uniqueValues(key) {
   return [...new Set(questions.map((q) => q[key]))];
 }
@@ -106,6 +103,12 @@ function fillSelect(select, values) {
   select.innerHTML = `<option value="">Todos</option>${values
     .map((value) => `<option value="${value}">${value}</option>`)
     .join("")}`;
+}
+
+function refreshFilters() {
+  fillSelect(gradeFilter, uniqueValues("grade"));
+  fillSelect(subjectFilter, uniqueValues("subject"));
+  fillSelect(difficultyFilter, uniqueValues("difficulty"));
 }
 
 function filteredQuestions() {
@@ -198,6 +201,17 @@ function reportError(questionId) {
   renderQuestions();
 }
 
+function youtubeEmbedUrl(url) {
+  if (!url) {
+    return "";
+  }
+
+  const watchMatch = url.match(/[?&]v=([^&]+)/);
+  const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
+  const id = watchMatch?.[1] || shortMatch?.[1];
+  return id ? `https://www.youtube.com/embed/${id}` : "";
+}
+
 function renderTabContent(q, tab) {
   if (tab === "gabarito") {
     const answer = answers.get(q.id);
@@ -206,12 +220,18 @@ function renderTabContent(q, tab) {
     }
 
     const status = answer.correct ? "✅ Você acertou." : "❌ Você errou.";
+    const embed = youtubeEmbedUrl(q.solutionVideo);
+
     return `
       <h4>Gabarito comentado</h4>
       <p><strong>Resposta correta:</strong> ${letters[q.correct]}</p>
       <p>${status}</p>
       <p><strong>Explicação:</strong> ${q.explanation}</p>
-      <p><a href="${q.solutionVideo}" target="_blank" rel="noopener noreferrer">▶ Ver vídeo de resolução</a></p>
+      ${
+        embed
+          ? `<div class="video-wrapper"><iframe src="${embed}" title="Vídeo resolução questão ${q.id}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`
+          : "<p class='muted'>Sem vídeo de resolução cadastrado.</p>"
+      }
     `;
   }
 
@@ -298,7 +318,7 @@ function renderQuestions() {
                 .map(
                   (option, idx) => `
                     <label class="option-item">
-                      <span class="option-letter">${letters[idx]}</span>
+                      <span class="option-letter">${letters[idx] || idx + 1}</span>
                       <input type="radio" name="q_${q.id}" value="${idx}" ${
                         answer && answer.selectedIndex === idx ? "checked" : ""
                       } />
@@ -327,16 +347,139 @@ function renderQuestions() {
     .join("");
 }
 
+function parseLessons(raw) {
+  return raw
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [title, url] = line.split("|").map((part) => part.trim());
+      return { title, url };
+    })
+    .filter((lesson) => lesson.title && lesson.url);
+}
+
+function onAdminSubmit(event) {
+  event.preventDefault();
+
+  const options = document.getElementById("adminOptions").value
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const correct = Number(document.getElementById("adminCorrect").value);
+
+  if (options.length < 2) {
+    adminFeedback.textContent = "Informe pelo menos 2 alternativas.";
+    return;
+  }
+
+  if (Number.isNaN(correct) || correct < 0 || correct >= options.length) {
+    adminFeedback.textContent = "Índice da resposta correta inválido.";
+    return;
+  }
+
+  const newQuestion = {
+    id: Math.max(...questions.map((q) => q.id), 0) + 1,
+    grade: document.getElementById("adminGrade").value.trim(),
+    subject: document.getElementById("adminSubject").value.trim(),
+    topic: document.getElementById("adminTopic").value.trim(),
+    difficulty: document.getElementById("adminDifficulty").value.trim(),
+    text: document.getElementById("adminText").value.trim(),
+    options,
+    correct,
+    explanation: document.getElementById("adminExplanation").value.trim(),
+    solutionVideo: document.getElementById("adminVideo").value.trim(),
+    lessons: parseLessons(document.getElementById("adminLessons").value)
+  };
+
+  if (!newQuestion.grade || !newQuestion.subject || !newQuestion.topic || !newQuestion.text) {
+    adminFeedback.textContent = "Preencha os campos obrigatórios da questão.";
+    return;
+  }
+
+  const custom = JSON.parse(localStorage.getItem(storage.customQuestions) || "[]");
+  custom.push(newQuestion);
+  localStorage.setItem(storage.customQuestions, JSON.stringify(custom));
+
+  questions = buildQuestions();
+  activeTabByQuestion = Object.fromEntries(questions.map((q) => [q.id, "gabarito"]));
+  refreshFilters();
+  renderQuestions();
+  adminQuestionForm.reset();
+  adminFeedback.textContent = "Questão cadastrada com sucesso.";
+}
+
+function setSession(user) {
+  localStorage.setItem(storage.session, JSON.stringify(user));
+}
+
+function getSession() {
+  const session = localStorage.getItem(storage.session);
+  return session ? JSON.parse(session) : null;
+}
+
+function clearSession() {
+  localStorage.removeItem(storage.session);
+}
+
+function applyAuthUI(session) {
+  const logged = Boolean(session);
+  loginSection.classList.toggle("hidden", logged);
+  appSection.classList.toggle("hidden", !logged);
+  topLoginBtn.classList.toggle("hidden", logged);
+
+  if (!logged) {
+    return;
+  }
+
+  welcomeText.textContent = `Logado como: ${session.username} (${session.label})`;
+  adminSection.classList.toggle("hidden", session.role !== "admin");
+  refreshFilters();
+  updateStats();
+  renderQuestions();
+}
+
+
+function onTopLoginClick() {
+  loginSection.classList.remove("hidden");
+  usernameInput.focus();
+  loginSection.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function onLogin(event) {
+  event.preventDefault();
+  loginFeedback.textContent = "";
+
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value.trim();
+  const user = users.find((item) => item.username === username && item.password === password);
+
+  if (!user) {
+    loginFeedback.textContent = "Usuário ou senha inválidos.";
+    return;
+  }
+
+  setSession(user);
+  applyAuthUI(user);
+  loginForm.reset();
+}
+
+function onLogout() {
+  clearSession();
+  applyAuthUI(null);
+}
+
 [gradeFilter, subjectFilter, difficultyFilter, searchFilter].forEach((element) => {
   element.addEventListener("input", renderQuestions);
 });
 
-fillSelect(gradeFilter, uniqueValues("grade"));
-fillSelect(subjectFilter, uniqueValues("subject"));
-fillSelect(difficultyFilter, uniqueValues("difficulty"));
+loginForm.addEventListener("submit", onLogin);
+logoutBtn.addEventListener("click", onLogout);
+topLoginBtn.addEventListener("click", onTopLoginClick);
+adminQuestionForm.addEventListener("submit", onAdminSubmit);
 
-updateStats();
-renderQuestions();
+applyAuthUI(getSession());
 
 window.answerQuestion = answerQuestion;
 window.setActiveTab = setActiveTab;

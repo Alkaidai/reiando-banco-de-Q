@@ -1,36 +1,45 @@
 # Banco de Questões Escolar
 
-MVP web de questões para 7º, 8º e 9º ano do Ensino Fundamental e 1º ano do Ensino Médio, com foco em Matemática e Física.
+MVP web para 7º, 8º e 9º ano do Ensino Fundamental e 1º ano do Ensino Médio, com foco em Matemática e Física.
 
 ## Funcionalidades
 
-- filtro por série, disciplina, dificuldade e busca por termo;
-- questão com cabeçalho de série + assunto;
-- resolução com feedback no gabarito comentado;
-- aba **Gabarito Comentado** com explicação em texto e link de vídeo de resolução;
-- aba **Aulas** com links dos assuntos abordados;
-- aba **Comentários** por questão;
-- aba **Caderno** para anotações por questão;
-- aba **Notificar Erro** para registrar problemas da questão;
-- estatísticas gerais de desempenho.
+- login de usuário (aluno/admin) com botão **Login** no topo;
+- filtros por série, disciplina, dificuldade e termo;
+- resolução com aba de gabarito comentado;
+- vídeo de resolução embutido no gabarito comentado;
+- abas por questão: aulas, comentários, caderno e notificar erro;
+- área administrativa para cadastrar novas questões;
+- estatísticas básicas de desempenho.
 
-## Persistência local
+## Credenciais de teste
 
-As informações abaixo são salvas no `localStorage` do navegador:
+- Aluno: `aluno` / `aluno123`
+- Admin: `admin` / `admin123`
 
-- comentários;
-- anotações (caderno);
-- notificações de erro.
+## Área de administração
+
+Com usuário admin é exibido um formulário para cadastrar:
+
+- série, disciplina, assunto e dificuldade;
+- enunciado;
+- alternativas (uma por linha);
+- índice da alternativa correta (começando em 0);
+- explicação textual;
+- URL de vídeo no YouTube;
+- aulas no formato `Título | URL`.
+
+As novas questões ficam salvas no navegador (`localStorage`).
 
 ## Como usar
 
-1. Abra `index.html` no navegador.
-2. Filtre as questões.
-3. Responda e abra as abas conforme necessidade.
-4. Use comentários, caderno e notificação de erro para cada questão.
+1. Abra `index.html` no navegador (ou rode `python -m http.server 4173` e acesse `http://localhost:4173`).
+2. Clique no botão **Login** no topo e faça login.
+3. Filtre, responda e navegue nas abas da questão.
+4. Se for admin, use a área de administração para cadastrar questões.
 
 ## Estrutura
 
-- `index.html`: layout e áreas da tela.
-- `styles.css`: estilos dos cards, alternativas e abas.
-- `app.js`: dados de questões, filtros, respostas, abas e persistência local.
+- `index.html`: login, app principal e formulário admin.
+- `styles.css`: estilos de layout, abas, vídeo e formulários.
+- `app.js`: regras de autenticação, renderização de questões e persistência local.
