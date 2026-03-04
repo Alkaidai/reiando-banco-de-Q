@@ -3,105 +3,52 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Banco de Questões Escolar - Admin</title>
+    <title>Painel Admin - Banco de Questões</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="container">
       <header class="topbar card">
-        <strong>Painel Administrativo</strong>
+        <strong>Área Administrativa</strong>
         <div class="header-actions">
-          <a class="tab-btn" href="index.html">Área do Aluno</a>
+          <a class="tab-btn" href="index.html">Voltar para Aluno</a>
           <button id="adminLogoutBtn" class="tab-btn" type="button">Sair</button>
         </div>
       </header>
 
-      <section id="adminLoginSection" class="card auth-card">
-        <h1>Login Admin</h1>
-        <p>Acesso restrito ao administrador.</p>
-        <form id="adminLoginForm" class="auth-form">
-          <label>Usuário<input id="adminUsername" type="text" required /></label>
-          <label>Senha<input id="adminPassword" type="password" required /></label>
-          <button class="primary-btn" type="submit">Entrar no painel</button>
-          <p class="muted">Credencial: admin / admin123</p>
-          <p id="adminLoginFeedback" class="error-text"></p>
-        </form>
+      <section id="deniedSection" class="card hidden">
+        <h2>Acesso negado</h2>
+        <p>Esta área é exclusiva para administradores.</p>
+        <a class="primary-btn" href="index.html">Voltar</a>
       </section>
 
-      <section id="adminAppSection" class="hidden">
-        <nav class="card admin-menu">
-          <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-          <button class="tab-btn" data-tab="questoes">Questões</button>
-          <button class="tab-btn" data-tab="aulas">Aulas</button>
-          <button class="tab-btn" data-tab="erros">Erros reportados</button>
-        </nav>
-
-        <section id="tab-dashboard" class="card admin-tab">
-          <h2>Dashboard</h2>
-          <div id="dashboardStats" class="admin-kpis"></div>
-        </section>
-
-        <section id="tab-questoes" class="card admin-tab hidden">
-          <div class="row-between">
-            <h2>Questões</h2>
-            <button id="newQuestionBtn" class="primary-btn" type="button">Nova questão</button>
-          </div>
-
-          <form id="questionForm" class="admin-grid hidden">
-            <input id="questionId" type="hidden" />
-            <label>Série<input id="qGrade" type="text" required /></label>
-            <label>Disciplina<input id="qSubject" type="text" required /></label>
-            <label>Assunto<input id="qTopic" type="text" required /></label>
-            <label>Dificuldade<input id="qDifficulty" type="text" required /></label>
-            <label class="full">Enunciado<textarea id="qText" required></textarea></label>
-            <label class="full">Alternativas (uma por linha)<textarea id="qOptions" required></textarea></label>
-            <label>Correta (índice 0,1,2...)
-              <input id="qCorrect" type="number" min="0" required />
-            </label>
-            <label class="full">Explicação<textarea id="qExplanation" required></textarea></label>
-            <label class="full">Vídeo (YouTube URL)<input id="qVideo" type="url" /></label>
-            <label class="full">Aulas da questão (Título | URL por linha)<textarea id="qLessons"></textarea></label>
-            <div class="inline-actions full">
-              <button class="primary-btn" type="submit">Salvar</button>
-              <button id="cancelQuestionBtn" class="tab-btn" type="button">Cancelar</button>
-            </div>
-          </form>
-
-          <h3>Importação JSON</h3>
-          <p class="muted">Cole um array JSON de questões e clique em Importar.</p>
-          <textarea id="importJson" placeholder='[{"grade":"7º ano", "subject":"Matemática", ...}]'></textarea>
+      <section id="adminSection" class="card hidden">
+        <div class="row-between">
+          <h2>Questões (CRUD)</h2>
           <div class="inline-actions">
-            <button id="importBtn" class="primary-btn" type="button">Importar</button>
-            <span id="importFeedback" class="muted"></span>
+            <button id="newQuestionBtn" class="primary-btn" type="button">Nova questão</button>
+            <button id="resetSeedBtn" class="tab-btn" type="button">Reset para exemplos</button>
           </div>
+        </div>
 
-          <div id="questionsAdminList"></div>
-        </section>
-
-        <section id="tab-aulas" class="card admin-tab hidden">
-          <div class="row-between">
-            <h2>Aulas</h2>
-            <button id="newLessonBtn" class="primary-btn" type="button">Nova aula</button>
+        <form id="questionForm" class="admin-grid hidden">
+          <input id="questionId" type="hidden" />
+          <label>Série<input id="qGrade" type="text" required /></label>
+          <label>Disciplina<input id="qSubject" type="text" required /></label>
+          <label>Dificuldade<input id="qDifficulty" type="text" required /></label>
+          <label class="full">Enunciado<textarea id="qText" required></textarea></label>
+          <label class="full">Alternativas (uma por linha)<textarea id="qOptions" required></textarea></label>
+          <label>Correta (índice 0,1,2...)
+            <input id="qCorrect" type="number" min="0" required />
+          </label>
+          <label class="full">Explicação<textarea id="qExplanation" required></textarea></label>
+          <div class="inline-actions full">
+            <button class="primary-btn" type="submit">Salvar</button>
+            <button id="cancelQuestionBtn" class="tab-btn" type="button">Cancelar</button>
           </div>
+        </form>
 
-          <form id="lessonForm" class="admin-grid hidden">
-            <input id="lessonId" type="hidden" />
-            <label>Título<input id="lessonTitle" type="text" required /></label>
-            <label>Assunto<input id="lessonTopic" type="text" required /></label>
-            <label class="full">URL<input id="lessonUrl" type="url" required /></label>
-            <div class="inline-actions full">
-              <button class="primary-btn" type="submit">Salvar aula</button>
-              <button id="cancelLessonBtn" class="tab-btn" type="button">Cancelar</button>
-            </div>
-          </form>
-
-          <div id="lessonsAdminList"></div>
-        </section>
-
-        <section id="tab-erros" class="card admin-tab hidden">
-          <h2>Erros reportados</h2>
-          <div id="reportsList"></div>
-        </section>
+        <div id="adminQuestionsList"></div>
       </section>
     </main>
 

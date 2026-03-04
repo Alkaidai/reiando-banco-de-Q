@@ -1,57 +1,53 @@
-# Banco de Questões Escolar
+# Banco de Questões Escolar (Etapa 1)
 
-Projeto estático (HTML/CSS/JS) compatível com GitHub Pages, com separação real entre área do aluno e painel administrativo.
+Projeto estático (sem build) para GitHub Pages com:
 
-## Rotas
+- área do aluno em `/` (`index.html`)
+- área admin separada em `/admin.html`
 
-- Aluno: `/` (arquivo `index.html`)
-- Admin: `/admin.html`
+## Login e roles
 
-## Login de teste
+- `aluno` / `aluno123` => `role: "student"`
+- `admin` / `admin123` => `role: "admin"`
 
-- Aluno: `aluno` / `aluno123`
-- Admin: `admin` / `admin123`
+A sessão é salva em `localStorage["currentUser"]` com formato:
 
-## Área do aluno (`index.html`)
+```json
+{ "username": "admin", "role": "admin" }
+```
 
-- filtros por série, disciplina, dificuldade e busca;
-- resolução de questões;
-- abas por questão: gabarito comentado (com vídeo), aulas, comentários, caderno e notificar erro;
-- desempenho básico;
-- se logado como admin, mostra botão **Admin** no topo para abrir `/admin.html`.
+## Banco de questões
 
-## Área administrativa (`admin.html`)
+As questões ficam em `localStorage["questionBank"]`.
 
-- login admin obrigatório (`admin/admin123`);
-- menu com: **Dashboard | Questões | Aulas | Erros reportados**;
-- **Questões (CRUD completo)**:
-  - listar;
-  - nova questão;
-  - editar;
-  - excluir;
-  - persistência em `localStorage["questionBank"]`;
-- importação JSON simples de questões (textarea + botão Importar);
-- **Aulas (CRUD)** com persistência em `localStorage["lessonsBank"]`;
-- visualização de erros reportados pelos alunos (`localStorage["question_reports"]`).
+- O app sempre garante seed com **3 questões fixas** quando estiver vazio.
+- Cada questão já inclui estrutura para futuro: `comments: []`.
 
-## Persistência local
+## Área do aluno (`index.html` + `app.js`)
 
-- `questionBank`: banco principal de questões;
-- `lessonsBank`: banco de aulas;
-- `question_comments`: comentários por questão;
-- `question_notes`: caderno por questão;
-- `question_reports`: erros reportados;
-- `user_session`: sessão de login.
+- login;
+- filtros;
+- resolução e desempenho;
+- botão **Admin** no topo somente para `role=admin`.
 
-## Execução local
+## Área admin (`admin.html` + `admin.js`)
 
-Abra `index.html` direto no navegador ou rode:
+- acesso permitido somente para `role=admin`.
+- para não admin: tela **Acesso negado** + link voltar.
+- CRUD de questões:
+  - listar
+  - criar
+  - editar
+  - excluir
+- botão **Reset para exemplos** (restaura as 3 questões fixas).
+
+## Rodar localmente
 
 ```bash
 python -m http.server 4173
 ```
 
-Depois acesse:
+Abrir:
 
 - `http://localhost:4173/`
 - `http://localhost:4173/admin.html`
