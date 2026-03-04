@@ -1,0 +1,251 @@
+import { COMMENT_STATUS, SEED_VERSION, STORAGE_KEYS, USERS } from './constants.js';
+
+let inMemoryQuestions = [];
+let inMemoryTopics = [];
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function parseJson(raw, fallback) {
+  try {
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function newId(prefix) {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeReply(reply) {
+  return {
+    id: reply?.id ?? newId('rep'),
+    author: {
+      username: reply?.author?.username ?? 'admin',
+      role: reply?.author?.role ?? 'admin'
+    },
+    createdAt: reply?.createdAt ?? nowIso(),
+    text: String(reply?.text ?? '').trim()
+  };
+}
+
+function normalizeComment(comment) {
+  return {
+    id: comment?.id ?? newId('cmt'),
+    author: {
+      username: comment?.author?.username ?? 'anônimo',
+      role: comment?.author?.role ?? 'student'
+    },
+    createdAt: comment?.createdAt ?? nowIso(),
+    text: String(comment?.text ?? '').trim(),
+    status: [COMMENT_STATUS.open, COMMENT_STATUS.answered, COMMENT_STATUS.hidden].includes(comment?.status)
+      ? comment.status
+      : COMMENT_STATUS.open,
+    replies: Array.isArray(comment?.replies)
+      ? comment.replies.map(normalizeReply).filter((reply) => reply.text)
+      : []
+  };
+}
+
+function normalizeQuestion(question) {
+  const createdAt = question?.createdAt ?? nowIso();
+  return {
+    id: String(question?.id ?? newId('q')),
+    grade: question?.grade ?? '7EF',
+    subject: question?.subject ?? 'math',
+    difficulty: question?.difficulty ?? 'easy',
+    topicId: question?.topicId ?? '',
+    statement: String(question?.statement ?? '').trim(),
+    options: Array.isArray(question?.options)
+      ? question.options.map((o) => String(o ?? '').trim()).filter(Boolean)
+      : [],
+    correctIndex: Number.isInteger(question?.correctIndex) ? question.correctIndex : 0,
+    explanation: String(question?.explanation ?? '').trim(),
+    status: question?.status === 'draft' ? 'draft' : 'published',
+    createdAt,
+    updatedAt: question?.updatedAt ?? createdAt,
+    comments: Array.isArray(question?.comments) ? question.comments.map(normalizeComment).filter((c) => c.text) : []
+  };
+}
+
+function normalizeAttempt(attempt) {
+  return {
+    id: attempt?.id ?? Date.now(),
+    userId: String(attempt?.userId ?? ''),
+    questionId: String(attempt?.questionId ?? ''),
+    selectedIndex: Number(attempt?.selectedIndex ?? -1),
+    isCorrect: Boolean(attempt?.isCorrect),
+    answeredAt: attempt?.answeredAt ?? nowIso()
+  };
+}
+
+function normalizeNotebookItem(item) {
+  return {
+    userId: String(item?.userId ?? ''),
+    questionId: String(item?.questionId ?? ''),
+    status: item?.status === 'mastered' ? 'mastered' : 'pending',
+    whatIErred: String(item?.whatIErred ?? ''),
+    ruleInsight: String(item?.ruleInsight ?? ''),
+    updatedAt: item?.updatedAt ?? nowIso()
+  };
+}
+
+export async function initStorageFromSeeds() {
+  const shouldReset = localStorage.getItem(STORAGE_KEYS.version) !== SEED_VERSION;
+  const hasBank = !!localStorage.getItem(STORAGE_KEYS.questionBank);
+  const hasTopics = !!localStorage.getItem(STORAGE_KEYS.topicsBank);
+
+  if (!shouldReset && hasBank && hasTopics) {
+    inMemoryQuestions = loadQuestionBank();
+    inMemoryTopics = loadTopicsBank();
+    return;
+  }
+
+  const [questionsRes, topicsRes] = await Promise.all([
+    fetch('./data/questions.seed.json'),
+    fetch('./data/topics.seed.json')
+  ]);
+
+  const [questionsSeed, topicsSeed] = await Promise.all([questionsRes.json(), topicsRes.json()]);
+  inMemoryQuestions = questionsSeed.map((q) => normalizeQuestion({ ...q, createdAt: nowIso(), updatedAt: nowIso() }));
+  inMemoryTopics = Array.isArray(topicsSeed) ? topicsSeed : [];
+
+  saveQuestionBank(inMemoryQuestions);
+  saveTopicsBank(inMemoryTopics);
+  localStorage.setItem(STORAGE_KEYS.version, SEED_VERSION);
+}
+
+export function resetToSeed() {
+  localStorage.removeItem(STORAGE_KEYS.questionBank);
+  localStorage.removeItem(STORAGE_KEYS.topicsBank);
+  localStorage.removeItem(STORAGE_KEYS.version);
+  return initStorageFromSeeds();
+}
+
+export function loadQuestionBank() {
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.questionBank), inMemoryQuestions);
+  return Array.isArray(stored) ? stored.map(normalizeQuestion) : [];
+}
+
+export function saveQuestionBank(bank) {
+  const normalized = Array.isArray(bank) ? bank.map(normalizeQuestion) : [];
+  inMemoryQuestions = normalized;
+  localStorage.setItem(STORAGE_KEYS.questionBank, JSON.stringify(normalized));
+  return normalized;
+}
+
+export function loadTopicsBank() {
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.topicsBank), inMemoryTopics);
+  return Array.isArray(stored) ? stored : [];
+}
+
+export function saveTopicsBank(topics) {
+  inMemoryTopics = Array.isArray(topics) ? topics : [];
+  localStorage.setItem(STORAGE_KEYS.topicsBank, JSON.stringify(inMemoryTopics));
+}
+
+export function getQuestionById(id) {
+  return loadQuestionBank().find((question) => question.id === id) ?? null;
+}
+
+export function addComment(questionId, comment) {
+  const bank = loadQuestionBank();
+  const qIndex = bank.findIndex((question) => question.id === questionId);
+  if (qIndex < 0) return null;
+
+  const normalizedComment = normalizeComment(comment);
+  bank[qIndex].comments = [...(bank[qIndex].comments ?? []), normalizedComment];
+  bank[qIndex].updatedAt = nowIso();
+  saveQuestionBank(bank);
+  return normalizedComment;
+}
+
+export function addReply(questionId, commentId, reply) {
+  const bank = loadQuestionBank();
+  const question = bank.find((q) => q.id === questionId);
+  if (!question) return null;
+  const comment = question.comments.find((item) => item.id === commentId);
+  if (!comment) return null;
+
+  comment.replies.push(normalizeReply(reply));
+  comment.status = COMMENT_STATUS.answered;
+  question.updatedAt = nowIso();
+  saveQuestionBank(bank);
+  return comment;
+}
+
+export function setCommentStatus(questionId, commentId, status) {
+  const bank = loadQuestionBank();
+  const question = bank.find((q) => q.id === questionId);
+  if (!question) return null;
+  const comment = question.comments.find((item) => item.id === commentId);
+  if (!comment) return null;
+
+  comment.status = status;
+  question.updatedAt = nowIso();
+  saveQuestionBank(bank);
+  return comment;
+}
+
+export function getAttempts(userId) {
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.attempts), []);
+  const list = Array.isArray(stored) ? stored.map(normalizeAttempt) : [];
+  if (!userId) return list;
+  return list.filter((item) => item.userId === userId);
+}
+
+export function addAttempt(attempt) {
+  const list = getAttempts();
+  const normalized = normalizeAttempt(attempt);
+  list.push(normalized);
+  localStorage.setItem(STORAGE_KEYS.attempts, JSON.stringify(list));
+  return normalized;
+}
+
+export function getNotebook(userId) {
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.notebook), []);
+  const list = Array.isArray(stored) ? stored.map(normalizeNotebookItem) : [];
+  if (!userId) return list;
+  return list.filter((item) => item.userId === userId);
+}
+
+export function upsertNotebookItem(userId, questionId, patch = {}) {
+  const all = getNotebook();
+  const index = all.findIndex((item) => item.userId === userId && item.questionId === questionId);
+  const nextItem = normalizeNotebookItem({
+    userId,
+    questionId,
+    ...(index >= 0 ? all[index] : {}),
+    ...patch,
+    updatedAt: nowIso()
+  });
+
+  if (index >= 0) {
+    all[index] = nextItem;
+  } else {
+    all.push(nextItem);
+  }
+
+  localStorage.setItem(STORAGE_KEYS.notebook, JSON.stringify(all));
+  return nextItem;
+}
+
+export function authenticate(username, password) {
+  const found = USERS.find((user) => user.username === username && user.password === password);
+  if (!found) return null;
+  return { username: found.username, role: found.role };
+}
+
+export function getCurrentUser() {
+  return parseJson(localStorage.getItem(STORAGE_KEYS.currentUser), null);
+}
+
+export function setCurrentUser(user) {
+  localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(user));
+}
+
+export function logout() {
+  localStorage.removeItem(STORAGE_KEYS.currentUser);
+}
