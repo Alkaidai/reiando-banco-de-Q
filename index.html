@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Banco de Questões Escolar</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="topbar card">
+        <strong>Banco de Questões Escolar</strong>
+        <button id="topLoginBtn" class="primary-btn" type="button">Login</button>
+      </header>
+
+      <section id="loginSection" class="card auth-card">
+        <h1>Banco de Questões Escolar</h1>
+        <p>Faça login para acessar questões, gabaritos e área administrativa.</p>
+
+        <form id="loginForm" class="auth-form">
+          <label>
+            Usuário
+            <input id="usernameInput" type="text" placeholder="ex.: aluno" required />
+          </label>
+          <label>
+            Senha
+            <input id="passwordInput" type="password" placeholder="Digite sua senha" required />
+          </label>
+          <button class="primary-btn" type="submit">Entrar</button>
+          <p class="muted">Teste rápido: aluno/aluno123 ou admin/admin123</p>
+          <p id="loginFeedback" class="error-text"></p>
+        </form>
+      </section>
+
+      <section id="appSection" class="hidden">
+        <header class="card header-row">
+          <div>
+            <h1>Banco de Questões Escolar</h1>
+            <p>Matemática e Física para 7º, 8º, 9º e 1º ano do Ensino Médio.</p>
+          </div>
+          <div class="header-actions">
+            <span id="welcomeText" class="muted"></span>
+            <button id="logoutBtn" class="tab-btn" type="button">Sair</button>
+          </div>
+        </header>
+
+        <section class="filters card">
+          <h2>Filtros</h2>
+          <div class="grid">
+            <label>
+              Série
+              <select id="gradeFilter"></select>
+            </label>
+            <label>
+              Disciplina
+              <select id="subjectFilter"></select>
+            </label>
+            <label>
+              Dificuldade
+              <select id="difficultyFilter"></select>
+            </label>
+            <label>
+              Buscar termo
+              <input id="searchFilter" type="text" placeholder="Ex.: fração, força, velocidade" />
+            </label>
+          </div>
+        </section>
+
+        <section class="stats card">
+          <h2>Seu desempenho</h2>
+          <div id="stats"></div>
+        </section>
+
+        <section id="adminSection" class="card hidden">
+          <h2>Área de Administração</h2>
+          <p>Cadastre novas questões e aulas de apoio.</p>
+          <form id="adminQuestionForm" class="admin-grid">
+            <label>Série<input id="adminGrade" type="text" placeholder="7º ano" required /></label>
+            <label>Disciplina<input id="adminSubject" type="text" placeholder="Matemática" required /></label>
+            <label>Assunto<input id="adminTopic" type="text" placeholder="Frações" required /></label>
+            <label>Dificuldade<input id="adminDifficulty" type="text" placeholder="Fácil" required /></label>
+            <label class="full">Enunciado<textarea id="adminText" required></textarea></label>
+            <label class="full">Alternativas (uma por linha)<textarea id="adminOptions" required></textarea></label>
+            <label>Índice da correta (0,1,2...)
+              <input id="adminCorrect" type="number" min="0" required />
+            </label>
+            <label class="full">Explicação<textarea id="adminExplanation" required></textarea></label>
+            <label class="full">URL do vídeo (YouTube)
+              <input id="adminVideo" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+            </label>
+            <label class="full">Aulas (1 por linha no formato: Título | URL)
+              <textarea id="adminLessons" placeholder="Aula de frações | https://...\nExercícios | https://..."></textarea>
+            </label>
+            <button class="primary-btn" type="submit">Salvar questão</button>
+          </form>
+          <div id="adminFeedback" class="muted"></div>
+        </section>
+
+        <section class="card">
+          <h2>Questões</h2>
+          <div id="questionsList"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
