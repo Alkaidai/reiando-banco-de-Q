@@ -57,11 +57,13 @@ admin.html
 ## Funcionalidades
 
 ### Aluno (`index.html`)
+- Estado de autenticação com `#loginView` e `#appView` (visitante vê só login; logado vê dashboard/questões/caderno).
 - Dashboard com Respondidas, Acertos e Aproveitamento (%), calculado via `bq_attempts`.
 - Mensagem de início: **Comece respondendo questões.** quando não há tentativas.
 - Top 3 tópicos mais fracos por taxa de erro.
 - Revisão imediata das últimas 10 questões erradas com botão **Refazer**.
 - Aba **Questões** com filtros: série, disciplina, dificuldade, tópico e busca.
+- Card de questão com abas internas: Gabarito comentado, Aulas, Comentários, Caderno e Notificar erro.
 - Fluxo de resposta com confirmar/travar alternativas/feedback/explicação.
 - Aba **Caderno de erros** com notas editáveis e status (`pending`/`mastered`).
 

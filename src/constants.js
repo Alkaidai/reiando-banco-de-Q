@@ -6,7 +6,8 @@ export const STORAGE_KEYS = {
   topicsBank: `${STORAGE_PREFIX}topicsBank`,
   version: `${STORAGE_PREFIX}seedVersion`,
   attempts: 'bq_attempts',
-  notebook: 'bq_notebook'
+  notebook: 'bq_notebook',
+  reports: 'bq_question_reports'
 };
 
 export const SEED_VERSION = '2.0.0';

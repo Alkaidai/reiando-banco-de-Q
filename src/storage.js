@@ -232,6 +232,28 @@ export function upsertNotebookItem(userId, questionId, patch = {}) {
   return nextItem;
 }
 
+
+
+export function getQuestionReports() {
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.reports), []);
+  return Array.isArray(stored) ? stored : [];
+}
+
+export function addQuestionReport(report) {
+  const all = getQuestionReports();
+  const normalized = {
+    id: report?.id ?? newId('rpt'),
+    userId: String(report?.userId ?? ''),
+    questionId: String(report?.questionId ?? ''),
+    type: String(report?.type ?? 'geral'),
+    description: String(report?.description ?? '').trim(),
+    createdAt: report?.createdAt ?? nowIso()
+  };
+  all.push(normalized);
+  localStorage.setItem(STORAGE_KEYS.reports, JSON.stringify(all));
+  return normalized;
+}
+
 export function authenticate(username, password) {
   const found = USERS.find((user) => user.username === username && user.password === password);
   if (!found) return null;

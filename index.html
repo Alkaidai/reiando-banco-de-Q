@@ -11,13 +11,14 @@
       <h1>Banco de Questões</h1>
       <div class="top-actions">
         <a id="adminLink" class="btn-secondary hidden" href="./admin.html">Admin</a>
-        <span id="sessionInfo" class="session"></span>
-        <button id="logoutBtn" class="btn-danger">Sair</button>
+        <span id="headerUserState" class="session">Visitante</span>
+        <button id="headerLoginBtn" class="btn-secondary">Login</button>
+        <button id="logoutBtn" class="btn-danger hidden">Sair</button>
       </div>
     </header>
 
     <main class="container">
-      <section class="auth-card">
+      <section id="loginView" class="auth-card">
         <h2>Login</h2>
         <form id="loginForm">
           <input id="username" placeholder="Usuário" required />
@@ -27,56 +28,58 @@
         <p id="loginFeedback" class="error-text"></p>
       </section>
 
-      <nav class="menu student-menu">
-        <button data-tab="panel-dashboard" class="active">Dashboard</button>
-        <button data-tab="panel-questions">Questões</button>
-        <button data-tab="panel-notebook">Caderno de erros</button>
-      </nav>
+      <section id="appView" class="hidden">
+        <nav class="menu student-menu">
+          <button data-tab="panel-dashboard" class="active">Dashboard</button>
+          <button data-tab="panel-questions">Questões</button>
+          <button data-tab="panel-notebook">Caderno de erros</button>
+        </nav>
 
-      <section id="panel-dashboard" class="student-panel">
-        <section class="stats-grid">
-          <article class="stat-card"><p>Respondidas</p><strong id="statAnswered">0</strong></article>
-          <article class="stat-card"><p>Acertos</p><strong id="statCorrect">0</strong></article>
-          <article class="stat-card"><p>Aproveitamento</p><strong id="statRate">0%</strong></article>
+        <section id="panel-dashboard" class="student-panel">
+          <section class="stats-grid">
+            <article class="stat-card"><p>Respondidas</p><strong id="statAnswered">0</strong></article>
+            <article class="stat-card"><p>Acertos</p><strong id="statCorrect">0</strong></article>
+            <article class="stat-card"><p>Aproveitamento</p><strong id="statRate">0%</strong></article>
+          </section>
+
+          <section id="dashboardEmpty" class="card">
+            <p>Comece respondendo questões.</p>
+          </section>
+
+          <section id="dashboardData" class="hidden">
+            <article class="card">
+              <h3>Tópicos mais fracos</h3>
+              <ul id="weakTopics"></ul>
+            </article>
+
+            <article class="card">
+              <h3>Revisar agora (últimas 10 erradas)</h3>
+              <div id="reviewNow"></div>
+            </article>
+          </section>
         </section>
 
-        <section id="dashboardEmpty" class="card">
-          <p>Comece respondendo questões.</p>
+        <section id="panel-questions" class="student-panel hidden">
+          <section class="filters card">
+            <h3>Filtros</h3>
+            <div class="filter-grid">
+              <select id="filterGrade"></select>
+              <select id="filterSubject"></select>
+              <select id="filterDifficulty"></select>
+              <select id="filterTopicId"></select>
+              <input id="filterSearch" placeholder="Buscar" />
+            </div>
+          </section>
+
+          <section id="questionsList" class="questions-list"></section>
         </section>
 
-        <section id="dashboardData" class="hidden">
+        <section id="panel-notebook" class="student-panel hidden">
           <article class="card">
-            <h3>Tópicos mais fracos</h3>
-            <ul id="weakTopics"></ul>
-          </article>
-
-          <article class="card">
-            <h3>Revisar agora (últimas 10 erradas)</h3>
-            <div id="reviewNow"></div>
+            <h3>Caderno de erros</h3>
+            <div id="notebookList"></div>
           </article>
         </section>
-      </section>
-
-      <section id="panel-questions" class="student-panel hidden">
-        <section class="filters card">
-          <h3>Filtros</h3>
-          <div class="filter-grid">
-            <select id="filterGrade"></select>
-            <select id="filterSubject"></select>
-            <select id="filterDifficulty"></select>
-            <select id="filterTopicId"></select>
-            <input id="filterSearch" placeholder="Buscar" />
-          </div>
-        </section>
-
-        <section id="questionsList" class="questions-list"></section>
-      </section>
-
-      <section id="panel-notebook" class="student-panel hidden">
-        <article class="card">
-          <h3>Caderno de erros</h3>
-          <div id="notebookList"></div>
-        </article>
       </section>
     </main>
 

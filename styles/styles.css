@@ -70,16 +70,51 @@ textarea { min-height: 80px; width: 100%; }
 
 .questions-list { display: grid; gap: 12px; }
 .meta { color: var(--muted); margin-top: 0; }
-.options { display: grid; gap: 6px; }
-.option { display: block; padding: 8px; border: 1px solid var(--border); border-radius: 8px; }
+.options { display: grid; gap: 8px; }
+.option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.option input { margin: 0; }
+.option-letter { font-weight: 700; color: #2d3b67; min-width: 36px; }
+.option-selected { border-color: #94aef8; background: #f2f6ff; }
 .option-correct { border-color: #83d3af; background: #ecfaf3; }
 .option-wrong { border-color: #f0a7ad; background: #fff2f3; }
-.actions-row { margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.feedback.ok { color: var(--ok); }
-.feedback.error { color: var(--danger); }
-.explanation { margin-top: 10px; padding: 10px; background: #f0f4ff; border-radius: 8px; }
 
-.comments { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+.actions-row { margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.feedback.ok { color: var(--ok); font-weight: 600; }
+.feedback.error { color: var(--danger); font-weight: 600; }
+
+.question-tabs {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.question-tab-btn {
+  border: 1px solid var(--border);
+  background: #f7f9ff;
+  color: #2b3f81;
+  cursor: pointer;
+}
+.question-tab-btn.active {
+  background: #e8efff;
+  border-color: #bfd0ff;
+  font-weight: 600;
+}
+.question-tab-panel {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fcfdff;
+}
+
 .comment-item { border: 1px solid var(--border); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
 .reply { margin-left: 12px; padding: 6px; background: #f8faff; border-radius: 6px; }
 
@@ -87,7 +122,6 @@ textarea { min-height: 80px; width: 100%; }
 .menu button { background: #eef1fb; cursor: pointer; }
 .menu button.active { background: var(--primary); color: white; border-color: transparent; }
 .student-menu { margin-top: 12px; }
-.student-panel { display: block; }
 .panel-header { display: flex; justify-content: space-between; align-items: center; }
 .question-form { display: grid; gap: 8px; margin-bottom: 12px; }
 .table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
