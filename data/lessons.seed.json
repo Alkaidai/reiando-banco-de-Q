@@ -1,0 +1,54 @@
+[
+  {
+    "id": "lesson_fracoes_1",
+    "title": "Frações: introdução e equivalência",
+    "url": "https://www.youtube.com/watch?v=U8f4I8Rk8xM",
+    "topic": "fracoes",
+    "subject": "math",
+    "grade": "7EF",
+    "provider": "YouTube"
+  },
+  {
+    "id": "lesson_fracoes_2",
+    "title": "Operações com frações (soma e subtração)",
+    "url": "https://www.youtube.com/watch?v=6f8eP5v2mR4",
+    "topic": "fracoes",
+    "subject": "math",
+    "grade": "8EF",
+    "provider": "YouTube"
+  },
+  {
+    "id": "lesson_eq1_1",
+    "title": "Equação do 1º grau: conceito e resolução",
+    "url": "https://www.youtube.com/watch?v=AP6R6C3mQf0",
+    "topic": "equacoes-1grau",
+    "subject": "math",
+    "grade": "9EF",
+    "provider": "YouTube"
+  },
+  {
+    "id": "lesson_eq1_2",
+    "title": "Equação do 1º grau na prática",
+    "url": "https://www.youtube.com/watch?v=1H0E4k7U2Q8",
+    "topic": "equacoes-1grau",
+    "subject": "math",
+    "provider": "YouTube"
+  },
+  {
+    "id": "lesson_cinematica_1",
+    "title": "Cinemática: velocidade média",
+    "url": "https://www.youtube.com/watch?v=gm4f6cQnT_0",
+    "topic": "cinematica",
+    "subject": "physics",
+    "grade": "1EM",
+    "provider": "YouTube"
+  },
+  {
+    "id": "lesson_cinematica_2",
+    "title": "Exercícios de velocidade média",
+    "url": "https://www.youtube.com/watch?v=UQx8tYI4sR8",
+    "topic": "cinematica",
+    "subject": "physics",
+    "provider": "YouTube"
+  }
+]
