@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Banco de Questões - Admin</title>
+    <link rel="stylesheet" href="./styles/main.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1 class="brand-logo" aria-label="Logo">
+        <img src="./assets/images/logo-cade-o-xis.png" alt="Cadê o Xis" />
+      </h1>
+      <div class="top-actions">
+        <a class="btn-secondary" href="./index.html">Área do Aluno</a>
+        <span id="sessionInfo" class="session"></span>
+        <button id="logoutBtn" class="btn-danger">Sair</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section id="loginBlock" class="auth-card">
+        <h2>Login admin</h2>
+        <form id="adminLoginForm">
+          <input id="adminUser" placeholder="Usuário" required />
+          <input id="adminPass" type="password" placeholder="Senha" required />
+          <button class="btn-primary" type="submit">Entrar</button>
+        </form>
+        <p id="adminLoginFeedback" class="error-text"></p>
+      </section>
+
+      <section id="adminApp" class="hidden">
+        <nav class="menu">
+          <button data-panel="dashboard" class="active">Dashboard</button>
+          <button data-panel="questions">Questões</button>
+          <button data-panel="users">Usuários</button>
+          <button data-panel="notebook">Caderno</button>
+          <button data-panel="comments">Comentários</button>
+          <button data-panel="lessons">Aulas</button>
+          <button data-panel="cadastros">Cadastros</button>
+          <button data-panel="reports">Erros reportados</button>
+          <button data-panel="import">Importar</button>
+        </nav>
+
+        <section id="dashboard" class="panel card">
+          <h2>Dashboard</h2>
+          <div id="adminDashboardCards" class="admin-stats-grid"></div>
+          <article class="card">
+            <h3>Usuários com pior aproveitamento</h3>
+            <div id="dashWorstUsers"></div>
+          </article>
+          <article class="card">
+            <div class="actions-row">
+              <h3>Top 10 tópicos mais errados</h3>
+              <select id="dashGradeFilter">
+                <option value="all">Geral</option>
+                <option value="7EF">7EF</option>
+                <option value="8EF">8EF</option>
+                <option value="9EF">9EF</option>
+                <option value="1EM">1EM</option>
+              </select>
+            </div>
+            <ol id="dashWorstTopics"></ol>
+          </article>
+          <div class="admin-dashboard-grid">
+            <article class="card">
+              <h3>Questões por série</h3>
+              <ul id="dashByGrade"></ul>
+            </article>
+            <article class="card">
+              <h3>Questões por disciplina</h3>
+              <ul id="dashBySubject"></ul>
+            </article>
+            <article class="card">
+              <h3>Questões por dificuldade</h3>
+              <ul id="dashByDifficulty"></ul>
+            </article>
+          </div>
+          <article class="card">
+            <h3>Top 10 questões com maior % de erro</h3>
+            <div id="dashWorstQuestions"></div>
+          </article>
+        </section>
+
+        <section id="questions" class="panel card hidden">
+          <div class="panel-header">
+            <h2>Questões</h2>
+            <div class="actions-row">
+              <button id="newQuestionBtn" class="btn-secondary">Nova questão</button>
+              <button id="resetSeedBtn" class="btn-danger">Reset seed</button>
+            </div>
+          </div>
+
+          <h3 id="formTitle">Nova questão</h3>
+          <form id="questionForm" class="question-form">
+            <select id="qGrade"></select>
+            <select id="qSubject"></select>
+            <select id="qDifficulty"></select>
+            <select id="qTopic"></select>
+            <select id="qStatus"><option value="published">published</option><option value="draft">draft</option></select>
+
+            <label for="qStatement">Enunciado</label>
+            <textarea id="qStatement" placeholder="Exemplo:
+Qual é o resultado de 3/4 + 1/4?" required></textarea>
+
+            <label>Alternativas (A–E)</label>
+            <input id="qOptionA" placeholder="A)" required />
+            <input id="qOptionB" placeholder="B)" required />
+            <input id="qOptionC" placeholder="C)" required />
+            <input id="qOptionD" placeholder="D)" required />
+            <input id="qOptionE" placeholder="E)" required />
+
+            <label for="qCorrectLetter">Resposta correta</label>
+            <select id="qCorrectLetter" required>
+              <option value="">Selecione</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
+              <option value="E">E</option>
+            </select>
+
+            <textarea id="qExplanation" placeholder="Explicação" required></textarea>
+            <button class="btn-primary" type="submit">Salvar questão</button>
+            <p id="formFeedback" class="error-text"></p>
+          </form>
+
+          <table class="table">
+            <thead><tr><th>Série</th><th>Disciplina</th><th>Dificuldade</th><th>Tópico</th><th>Enunciado</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="questionsTableBody"></tbody>
+          </table>
+        </section>
+
+        <section id="users" class="panel card hidden">
+          <h2>Usuários / Inspeção</h2>
+          <div class="admin-users-grid">
+            <div>
+              <h3>Cadastro / edição</h3>
+              <form id="userForm" class="question-form">
+                <input id="uUsername" placeholder="Username" required />
+                <input id="uPassword" placeholder="Senha" required />
+                <select id="uRole"><option value="student">student</option><option value="admin">admin</option></select>
+                <select id="uStatus"><option value="active">active</option><option value="blocked">blocked</option></select>
+                <select id="uGradeLevel">
+                  <option value="">Nenhuma</option>
+                  <option value="7EF">7EF</option>
+                  <option value="8EF">8EF</option>
+                  <option value="9EF">9EF</option>
+                  <option value="1EM">1EM</option>
+                </select>
+                <button class="btn-primary" type="submit">Salvar usuário</button>
+                <p id="userFormFeedback" class="error-text"></p>
+              </form>
+              <h3>Lista de usuários</h3>
+              <div id="usersList"></div>
+            </div>
+            <div id="userInspectionDetails" class="thread-details">
+              <p class="muted">Selecione um usuário para inspecionar.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="notebook" class="panel card hidden">
+          <h2>Caderno (inspeção)</h2>
+          <div class="actions-row">
+            <select id="notebookStudentSelect"></select>
+            <select id="notebookStatusFilter">
+              <option value="all">Todos</option>
+              <option value="pending">Pendentes</option>
+              <option value="mastered">Dominados</option>
+            </select>
+            <input id="notebookSearchFilter" placeholder="Buscar texto" />
+          </div>
+          <div id="adminNotebookList"></div>
+        </section>
+
+
+        <section id="lessons" class="panel card hidden">
+          <h2>Aulas</h2>
+          <form id="lessonForm" class="question-form">
+            <input id="lessonTitle" placeholder="Título da aula" required />
+            <input id="lessonUrl" placeholder="Link da aula" required />
+            <select id="lessonSubject"></select>
+            <select id="lessonGrade"></select>
+            <select id="lessonTopic"></select>
+            <button class="btn-primary" type="submit">Salvar aula</button>
+            <p id="lessonFormFeedback" class="error-text"></p>
+          </form>
+
+          <table class="table">
+            <thead><tr><th>Título</th><th>Disciplina</th><th>Série</th><th>Tópico</th><th>Ações</th></tr></thead>
+            <tbody id="lessonsTableBody"></tbody>
+          </table>
+        </section>
+
+        <section id="cadastros" class="panel card hidden">
+          <h2>Cadastros — Tópicos/Assuntos</h2>
+          <form id="topicForm" class="question-form">
+            <input id="topicName" placeholder="Ex.: Frações avançadas" required />
+            <select id="topicSubject"></select>
+            <select id="topicGrade"></select>
+            <select id="topicStatus">
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </select>
+            <button class="btn-primary" type="submit">Salvar tópico</button>
+            <p id="topicFormFeedback" class="error-text"></p>
+          </form>
+
+          <div class="actions-row">
+            <select id="topicFilterSubject">
+              <option value="all">Todas disciplinas</option>
+            </select>
+            <select id="topicFilterStatus">
+              <option value="all">Todos status</option>
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </select>
+            <input id="topicFilterSearch" placeholder="Buscar tópico" />
+          </div>
+
+          <table class="table">
+            <thead><tr><th>Nome</th><th>Disciplina</th><th>Série</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="topicsTableBody"></tbody>
+          </table>
+        </section>
+
+        <section id="comments" class="panel card hidden">
+          <h2>Comentários</h2>
+          <select id="commentFilter">
+            <option value="all">Todos</option>
+            <option value="open">Em aberto</option>
+            <option value="answered">Respondidos</option>
+            <option value="hidden">Ocultos</option>
+          </select>
+          <div class="comments-admin-grid">
+            <div id="commentList" class="comment-list admin"></div>
+            <div id="threadDetails" class="thread-details"></div>
+          </div>
+        </section>
+
+        <section id="reports" class="panel card hidden">
+          <h2>Erros reportados</h2>
+          <div class="actions-row">
+            <select id="reportsStatusFilter">
+              <option value="all">Todos</option>
+              <option value="open">Em aberto</option>
+              <option value="resolved">Resolvidos</option>
+              <option value="ignored">Ignorados</option>
+            </select>
+            <input id="reportsSearchFilter" placeholder="Buscar" />
+          </div>
+
+          <div class="comments-admin-grid">
+            <div>
+              <table class="table">
+                <thead><tr><th>Data</th><th>Tipo</th><th>Status</th><th>Série/Disciplina/Tópico</th><th>Preview</th><th>Autor</th><th>Ação</th></tr></thead>
+                <tbody id="reportsTableBody"></tbody>
+              </table>
+            </div>
+            <div id="reportDetails" class="thread-details">
+              <p class="muted">Selecione um report para triagem.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="import" class="panel card hidden">
+          <h2>Importar</h2>
+          <div class="actions-row">
+            <select id="importFormat">
+              <option value="json">JSON</option>
+              <option value="csv">CSV</option>
+              <option value="pdf">PDF</option>
+            </select>
+            <input id="importFile" type="file" />
+            <label><input type="checkbox" id="importAutoCreateTopics" /> Criar tópicos automaticamente se não existirem</label>
+            <select id="importAsStatus">
+              <option value="draft">Importar como draft</option>
+              <option value="published">Importar como published</option>
+            </select>
+            <button id="importSubmitBtn" class="btn-primary" disabled>Importar 0 questões</button>
+          </div>
+          <p id="importFeedback" class="muted"></p>
+          <div id="importPreview"></div>
+          <h3>Erros</h3>
+          <div id="importErrors"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script type="module" src="./src/admin.js"></script>
+  </body>
+</html>
