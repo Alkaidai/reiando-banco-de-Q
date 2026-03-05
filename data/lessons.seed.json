@@ -1,0 +1,26 @@
+[
+  {
+    "id": "lesson_fracoes_1",
+    "title": "Frações explicadas",
+    "url": "https://www.youtube.com/watch?v=U8f4I8Rk8xM",
+    "topic": "fracoes",
+    "subject": "math",
+    "grade": "7EF"
+  },
+  {
+    "id": "lesson_eq1_1",
+    "title": "Equações do 1º grau passo a passo",
+    "url": "https://www.youtube.com/watch?v=AP6R6C3mQf0",
+    "topic": "equacoes-1grau",
+    "subject": "math",
+    "grade": "9EF"
+  },
+  {
+    "id": "lesson_cinematica_1",
+    "title": "Velocidade média explicada",
+    "url": "https://www.youtube.com/watch?v=gm4f6cQnT_0",
+    "topic": "cinematica",
+    "subject": "physics",
+    "grade": "1EM"
+  }
+]
