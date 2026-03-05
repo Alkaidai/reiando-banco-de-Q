@@ -164,6 +164,10 @@ export async function ensureTopicsSeedLoaded() {
   return normalized;
 }
 
+export async function initTopicsFromSeed() {
+  return ensureTopicsSeedLoaded();
+}
+
 function ensureUsersSeeded() {
   const stored = parseJson(localStorage.getItem(STORAGE_KEYS.users), null);
   if (Array.isArray(stored) && stored.length) return;
@@ -223,6 +227,20 @@ export function saveQuestionBank(bank) {
   return normalized;
 }
 
+export function saveQuestionsBulk(questions = []) {
+  const current = loadQuestionBank();
+  const usedIds = new Set(current.map((q) => q.id));
+
+  const normalizedIncoming = (Array.isArray(questions) ? questions : []).map((question) => {
+    let id = String(question?.id ?? newId('q'));
+    while (usedIds.has(id)) id = newId('q');
+    usedIds.add(id);
+    return { ...question, id };
+  });
+
+  return saveQuestionBank([...normalizedIncoming, ...current]);
+}
+
 export function loadTopicsBank() {
   return getTopics();
 }
@@ -249,6 +267,10 @@ export function createTopic(topic) {
   return normalized;
 }
 
+export function saveTopic(topic) {
+  return createTopic(topic);
+}
+
 export function updateTopic(id, patch = {}) {
   const all = getTopics();
   const index = all.findIndex((topic) => topic.id === id);
@@ -261,6 +283,10 @@ export function updateTopic(id, patch = {}) {
 
 export function setTopicStatus(id, status) {
   return updateTopic(id, { status });
+}
+
+export function toggleTopicStatus(id, status) {
+  return setTopicStatus(id, status);
 }
 
 export function deleteTopic(id) {

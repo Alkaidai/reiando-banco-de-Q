@@ -37,8 +37,9 @@
           <button data-panel="notebook">Caderno</button>
           <button data-panel="comments">Comentários</button>
           <button data-panel="lessons">Aulas</button>
-          <button data-panel="topics">Tópicos</button>
+          <button data-panel="cadastros">Cadastros</button>
           <button data-panel="reports">Erros reportados</button>
+          <button data-panel="import">Importar</button>
         </nav>
 
         <section id="dashboard" class="panel card">
@@ -192,10 +193,10 @@ Qual é o resultado de 3/4 + 1/4?" required></textarea>
           </table>
         </section>
 
-        <section id="topics" class="panel card hidden">
-          <h2>Tópicos</h2>
+        <section id="cadastros" class="panel card hidden">
+          <h2>Cadastros — Tópicos/Assuntos</h2>
           <form id="topicForm" class="question-form">
-            <input id="topicName" placeholder="Nome do tópico" required />
+            <input id="topicName" placeholder="Ex.: Frações avançadas" required />
             <select id="topicSubject"></select>
             <select id="topicGrade"></select>
             <select id="topicStatus">
@@ -205,6 +206,18 @@ Qual é o resultado de 3/4 + 1/4?" required></textarea>
             <button class="btn-primary" type="submit">Salvar tópico</button>
             <p id="topicFormFeedback" class="error-text"></p>
           </form>
+
+          <div class="actions-row">
+            <select id="topicFilterSubject">
+              <option value="all">Todas disciplinas</option>
+            </select>
+            <select id="topicFilterStatus">
+              <option value="all">Todos status</option>
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </select>
+            <input id="topicFilterSearch" placeholder="Buscar tópico" />
+          </div>
 
           <table class="table">
             <thead><tr><th>Nome</th><th>Disciplina</th><th>Série</th><th>Status</th><th>Ações</th></tr></thead>
@@ -250,9 +263,32 @@ Qual é o resultado de 3/4 + 1/4?" required></textarea>
             </div>
           </div>
         </section>
+
+        <section id="import" class="panel card hidden">
+          <h2>Importar</h2>
+          <div class="actions-row">
+            <select id="importFormat">
+              <option value="json">JSON</option>
+              <option value="csv">CSV</option>
+              <option value="pdf">PDF</option>
+            </select>
+            <input id="importFile" type="file" />
+            <label><input type="checkbox" id="importAutoCreateTopics" /> Criar tópicos automaticamente se não existirem</label>
+            <select id="importAsStatus">
+              <option value="draft">Importar como draft</option>
+              <option value="published">Importar como published</option>
+            </select>
+            <button id="importSubmitBtn" class="btn-primary" disabled>Importar 0 questões</button>
+          </div>
+          <p id="importFeedback" class="muted"></p>
+          <div id="importPreview"></div>
+          <h3>Erros</h3>
+          <div id="importErrors"></div>
+        </section>
       </section>
     </main>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script type="module" src="./src/admin.js"></script>
   </body>
 </html>

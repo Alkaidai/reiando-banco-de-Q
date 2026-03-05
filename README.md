@@ -20,6 +20,8 @@ Projeto estático para GitHub Pages com duas áreas:
 /src
   constants.js
   storage.js
+  topics.js
+  importer.js
   ui.js
   lessons.js
   app.js
@@ -57,7 +59,9 @@ admin.html
 - `qb_seedVersion`
 - `bq_attempts`
 - `bq_notebook`
+- `bq_reports`
 - `bq_trainingPlans`
+- `bq_lessons`
 - `bq_users`
 - `bq_admin_selectedStudentId`
 
@@ -85,8 +89,9 @@ admin.html
   - campos obrigatórios,
   - mínimo de 2 alternativas,
   - índice da correta dentro do range.
-- Aba **Tópicos** com CRUD completo (criar/editar/desativar/excluir) persistido em `localStorage`.
+- Aba **Cadastros** com CRUD completo de Tópicos/Assuntos (criar/editar/desativar/reativar/excluir) persistido em `localStorage`.
 - Aba **Erros reportados** com triagem completa (open/resolved/ignored), nota do admin e atalho para abrir a questão.
+- Aba **Importar** com suporte a JSON/CSV/PDF, preview antes de importar, validação por questão e importação em lote.
 - Lista de questões com resumo e ações editar/excluir.
 - Moderação de comentários (responder, ocultar, reabrir).
 - Botão **Reset seed** para restaurar os dados de exemplo.
