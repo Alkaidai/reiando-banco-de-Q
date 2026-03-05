@@ -39,15 +39,8 @@ export const USERS = [
 ];
 
 export const GRADES = ['7EF', '8EF', '9EF', '1EM'];
-export const SUBJECTS = [
-  { value: 'math', label: 'Matemática' },
-  { value: 'physics', label: 'Física' }
-];
-export const DIFFICULTIES = [
-  { value: 'easy', label: 'Fácil' },
-  { value: 'medium', label: 'Média' },
-  { value: 'hard', label: 'Difícil' }
-];
+export const SUBJECTS = ['Matemática', 'Física'];
+export const DIFFICULTIES = ['Fácil', 'Média', 'Difícil'];
 
 export const COMMENT_STATUS = {
   open: 'open',

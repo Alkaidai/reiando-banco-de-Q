@@ -21,7 +21,7 @@ import {
   setCurrentUser,
   upsertUser
 } from './storage.js';
-import { difficultyLabel, formatDate, safeText, subjectLabel, uid } from './ui.js';
+import { difficultyCode, difficultyLabel, formatDate, safeText, subjectCode, subjectLabel, uid } from './ui.js';
 
 const adminState = {
   editingId: null,
@@ -52,8 +52,8 @@ function setActivePanel(panelId) {
 
 function populateFormSelects() {
   document.querySelector('#qGrade').innerHTML = GRADES.map((g) => `<option value="${g}">${g}</option>`).join('');
-  document.querySelector('#qSubject').innerHTML = SUBJECTS.map((s) => `<option value="${s.value}">${s.label}</option>`).join('');
-  document.querySelector('#qDifficulty').innerHTML = DIFFICULTIES.map((d) => `<option value="${d.value}">${d.label}</option>`).join('');
+  document.querySelector('#qSubject').innerHTML = SUBJECTS.map((label) => `<option value="${subjectCode(label)}">${label}</option>`).join('');
+  document.querySelector('#qDifficulty').innerHTML = DIFFICULTIES.map((label) => `<option value="${difficultyCode(label)}">${label}</option>`).join('');
   const topics = loadTopicsBank();
   document.querySelector('#qTopic').innerHTML = topics.map((topic) => `<option value="${topic.id}">${safeText(topic.label)}</option>`).join('');
 }

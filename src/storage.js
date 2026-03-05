@@ -85,6 +85,10 @@ function normalizeNotebookItem(item) {
   return {
     userId: String(item?.userId ?? ''),
     questionId: String(item?.questionId ?? ''),
+    grade: item?.grade ? String(item.grade) : null,
+    subject: item?.subject ? String(item.subject) : null,
+    difficulty: item?.difficulty ? String(item.difficulty) : null,
+    topicId: item?.topicId ? String(item.topicId) : null,
     status: item?.status === 'mastered' ? 'mastered' : 'pending',
     whatIErred: String(item?.whatIErred ?? ''),
     ruleInsight: String(item?.ruleInsight ?? ''),
@@ -282,9 +286,20 @@ export function getNotebook(userId) {
 export function upsertNotebookItem(userId, questionId, patch = {}) {
   const all = getNotebook();
   const index = all.findIndex((item) => item.userId === userId && item.questionId === questionId);
+  const question = getQuestionById(questionId);
+  const questionMeta = question
+    ? {
+        grade: question.grade,
+        subject: question.subject,
+        difficulty: question.difficulty,
+        topicId: question.topicId
+      }
+    : {};
+
   const nextItem = normalizeNotebookItem({
     userId,
     questionId,
+    ...questionMeta,
     ...(index >= 0 ? all[index] : {}),
     ...patch,
     updatedAt: nowIso()

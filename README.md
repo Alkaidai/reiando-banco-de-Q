@@ -16,14 +16,16 @@ Projeto estático para GitHub Pages com duas áreas:
 /data
   questions.seed.json
   topics.seed.json
+  lessons.seed.json
 /src
   constants.js
   storage.js
   ui.js
+  lessons.js
   app.js
   admin.js
 /styles
-  styles.css
+  main.css
 index.html
 admin.html
 ```
@@ -89,7 +91,7 @@ admin.html
 ## Rodar local
 
 ```bash
-python3 -m http.server 4173
+python -m http.server 4173
 ```
 
 Abra:

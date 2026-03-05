@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Banco de Questões - Aluno</title>
-    <link rel="stylesheet" href="./styles/styles.css" />
+    <link rel="stylesheet" href="./styles/main.css" />
   </head>
   <body>
     <header class="topbar">
@@ -86,6 +86,17 @@
         <section id="panel-notebook" class="student-panel hidden">
           <article class="card">
             <h3>Caderno de erros</h3>
+            <div class="filter-grid">
+              <select id="notebookFilterGrade"></select>
+              <select id="notebookFilterSubject"></select>
+              <select id="notebookFilterDifficulty"></select>
+              <select id="notebookFilterTopicId"></select>
+              <select id="notebookFilterStatus">
+                <option value="">Todos os status</option>
+                <option value="pending">pending</option>
+                <option value="mastered">mastered</option>
+              </select>
+            </div>
             <div id="notebookList"></div>
           </article>
         </section>

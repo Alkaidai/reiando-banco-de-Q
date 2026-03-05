@@ -16,12 +16,14 @@ import {
   setCurrentUser,
   upsertNotebookItem
 } from './storage.js';
-import { difficultyLabel, formatDate, optionLetter, safeText, showToast, subjectLabel, uid } from './ui.js';
+import { getLessonsForQuestion, loadLessons, renderLessons } from './lessons.js';
+import { difficultyCode, difficultyLabel, formatDate, optionLetter, safeText, showToast, subjectCode, subjectLabel, uid } from './ui.js';
 
 const state = {
   answers: {},
   activeQuestionTab: {},
   filters: { grade: '', subject: '', difficulty: '', topicId: '', search: '' },
+  notebookFilters: { grade: '', subject: '', difficulty: '', topicId: '', status: '' },
   training: {
     plan: null,
     questionIds: []
@@ -64,8 +66,8 @@ function filteredQuestions() {
 
   return questions.filter((q) => {
     if (state.filters.grade && q.grade !== state.filters.grade) return false;
-    if (state.filters.subject && q.subject !== state.filters.subject) return false;
-    if (state.filters.difficulty && q.difficulty !== state.filters.difficulty) return false;
+    if (state.filters.subject && q.subject !== subjectCode(state.filters.subject)) return false;
+    if (state.filters.difficulty && q.difficulty !== difficultyCode(state.filters.difficulty)) return false;
     if (state.filters.topicId && q.topicId !== state.filters.topicId) return false;
     if (state.filters.search) {
       const needle = state.filters.search.toLowerCase();
@@ -306,7 +308,7 @@ function questionTabPanel(tab, question, answer, user, notebookItem) {
       <p>${safeText(question.explanation)}</p>`;
   }
 
-  if (tab === 'aulas') return '<p class="muted">Aulas deste tópico em breve.</p>';
+  if (tab === 'aulas') return `<div data-role="lessons-panel" data-question-id="${question.id}"></div>`;
 
   if (tab === 'comentarios') {
     if (!user) return '<p class="muted">Faça login para visualizar e enviar comentários.</p>';
@@ -427,7 +429,40 @@ function renderQuestions() {
     : '<p class="muted">Nenhuma questão encontrada com os filtros atuais.</p>';
 
   document.querySelector('#questionsList').innerHTML = html;
+
+  const questionById = new Map(questions.map((q) => [q.id, q]));
+  document.querySelectorAll('[data-role="lessons-panel"]').forEach((container) => {
+    const question = questionById.get(container.dataset.questionId);
+    renderLessons(container, getLessonsForQuestion(question));
+  });
+
   renderTrainingHeader();
+}
+
+function notebookItemMeta(item, question) {
+  return {
+    grade: item.grade ?? question?.grade ?? '',
+    subject: item.subject ?? question?.subject ?? '',
+    difficulty: item.difficulty ?? question?.difficulty ?? '',
+    topicId: item.topicId ?? question?.topicId ?? ''
+  };
+}
+
+function notebookTopicLabel(topicId) {
+  return loadTopicsBank().find((topic) => topic.id === topicId)?.label ?? topicId ?? '—';
+}
+
+function filteredNotebookItems(items, questionsById) {
+  return items.filter((item) => {
+    const question = questionsById.get(item.questionId);
+    const meta = notebookItemMeta(item, question);
+    if (state.notebookFilters.grade && meta.grade !== state.notebookFilters.grade) return false;
+    if (state.notebookFilters.subject && meta.subject !== subjectCode(state.notebookFilters.subject)) return false;
+    if (state.notebookFilters.difficulty && meta.difficulty !== difficultyCode(state.notebookFilters.difficulty)) return false;
+    if (state.notebookFilters.topicId && meta.topicId !== state.notebookFilters.topicId) return false;
+    if (state.notebookFilters.status && item.status !== state.notebookFilters.status) return false;
+    return true;
+  });
 }
 
 function renderNotebook() {
@@ -440,15 +475,17 @@ function renderNotebook() {
 
   const notebook = getNotebook(userId).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   const questions = new Map(loadQuestionBank().map((q) => [q.id, q]));
+  const filtered = filteredNotebookItems(notebook, questions);
 
-  container.innerHTML = notebook.length
-    ? notebook
+  container.innerHTML = filtered.length
+    ? filtered
         .map((item) => {
           const q = questions.get(item.questionId);
           if (!q) return '';
+          const meta = notebookItemMeta(item, q);
           return `<article class="card notebook-item" data-question-id="${q.id}">
             <h4>${safeText(q.statement)}</h4>
-            <p class="meta">${q.grade} • ${subjectLabel(q.subject)} • ${difficultyLabel(q.difficulty)} • status: ${item.status}</p>
+            <p class="meta">${safeText(meta.grade)} • ${subjectLabel(meta.subject)} • ${difficultyLabel(meta.difficulty)} • ${safeText(notebookTopicLabel(meta.topicId))} • status: ${item.status}</p>
             <label>O que eu errei?</label>
             <textarea data-field="whatIErred">${safeText(item.whatIErred)}</textarea>
             <label>Regra / insight</label>
@@ -461,7 +498,7 @@ function renderNotebook() {
           </article>`;
         })
         .join('')
-    : '<p class="muted">Seu caderno está vazio. Erre uma questão para começar.</p>';
+    : '<p class="muted">Nenhum item com os filtros atuais.</p>';
 }
 
 function activateTab(tabId) {
@@ -496,10 +533,22 @@ function bindFilters() {
   });
 }
 
+function bindNotebookFilters() {
+  ['grade', 'subject', 'difficulty', 'topicId', 'status'].forEach((key) => {
+    document.querySelector(`#notebookFilter${key.charAt(0).toUpperCase()}${key.slice(1)}`).addEventListener('input', (event) => {
+      state.notebookFilters[key] = event.target.value.trim();
+      renderNotebook();
+    });
+  });
+}
+
 function hydrateSelects() {
   const topics = loadTopicsBank();
   const topicSelect = document.querySelector('#filterTopicId');
   topicSelect.innerHTML = '<option value="">Todos os tópicos</option>' + topics.map((t) => `<option value="${t.id}">${safeText(t.label)}</option>`).join('');
+
+  const notebookTopicSelect = document.querySelector('#notebookFilterTopicId');
+  notebookTopicSelect.innerHTML = '<option value="">Todos os tópicos</option>' + topics.map((t) => `<option value="${t.id}">${safeText(t.label)}</option>`).join('');
 }
 
 function bindQuestionActions() {
@@ -713,8 +762,12 @@ function bindAuth() {
 
 function populateSelects() {
   document.querySelector('#filterGrade').innerHTML = '<option value="">Todas as séries</option>' + GRADES.map((g) => `<option value="${g}">${g}</option>`).join('');
-  document.querySelector('#filterSubject').innerHTML = '<option value="">Todas as disciplinas</option>' + SUBJECTS.map((s) => `<option value="${s.value}">${s.label}</option>`).join('');
-  document.querySelector('#filterDifficulty').innerHTML = '<option value="">Todas as dificuldades</option>' + DIFFICULTIES.map((d) => `<option value="${d.value}">${d.label}</option>`).join('');
+  document.querySelector('#filterSubject').innerHTML = '<option value="">Todas as disciplinas</option>' + SUBJECTS.map((label) => `<option value="${label}">${label}</option>`).join('');
+  document.querySelector('#filterDifficulty').innerHTML = '<option value="">Todas as dificuldades</option>' + DIFFICULTIES.map((label) => `<option value="${label}">${label}</option>`).join('');
+
+  document.querySelector('#notebookFilterGrade').innerHTML = '<option value="">Todas as séries</option>' + GRADES.map((g) => `<option value="${g}">${g}</option>`).join('');
+  document.querySelector('#notebookFilterSubject').innerHTML = '<option value="">Todas as disciplinas</option>' + SUBJECTS.map((label) => `<option value="${label}">${label}</option>`).join('');
+  document.querySelector('#notebookFilterDifficulty').innerHTML = '<option value="">Todas as dificuldades</option>' + DIFFICULTIES.map((label) => `<option value="${label}">${label}</option>`).join('');
 }
 
 function initTrainingModeFromUrl() {
@@ -732,11 +785,13 @@ function initTrainingModeFromUrl() {
 
 async function init() {
   await initStorageFromSeeds();
+  await loadLessons();
   initTrainingModeFromUrl();
   populateSelects();
   hydrateSelects();
   bindTabs();
   bindFilters();
+  bindNotebookFilters();
   bindQuestionActions();
   bindNotebookActions();
   bindDashboardActions();
