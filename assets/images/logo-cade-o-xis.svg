@@ -1,0 +1,7 @@
+<svg width="160" height="48" viewBox="0 0 160 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="160" height="48" rx="12" fill="#FFFFFF"/>
+  <rect x="2" y="2" width="156" height="44" rx="10" stroke="#E6EAF2"/>
+  <circle cx="24" cy="24" r="14" fill="#014AAD"/>
+  <path d="M17 17L31 31M31 17L17 31" stroke="#FFC400" stroke-width="3" stroke-linecap="round"/>
+  <text x="46" y="30" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#014AAD">Cadê o Xis</text>
+</svg>

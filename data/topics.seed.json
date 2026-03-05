@@ -1,0 +1,7 @@
+[
+  { "id": "fracoes", "label": "Frações", "subject": "math", "grades": ["7EF", "8EF"] },
+  { "id": "equacoes-1grau", "label": "Equações do 1º grau", "subject": "math", "grades": ["8EF", "9EF"] },
+  { "id": "funcao-afim", "label": "Função afim", "subject": "math", "grades": ["9EF", "1EM"] },
+  { "id": "cinematica", "label": "Cinemática", "subject": "physics", "grades": ["9EF", "1EM"] },
+  { "id": "forca", "label": "Força e Leis de Newton", "subject": "physics", "grades": ["1EM"] }
+]
