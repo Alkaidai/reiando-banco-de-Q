@@ -7,6 +7,7 @@ import {
   getAttempts,
   getCurrentUser,
   getNotebook,
+  getLessons,
   getTrainingPlans,
   getUsersByRole,
   initStorageFromSeeds,
@@ -15,10 +16,13 @@ import {
   loadUsers,
   logout,
   resetToSeed,
+  saveLesson,
   saveQuestionBank,
   setAdminSelectedStudentId,
   setCommentStatus,
   setCurrentUser,
+  updateLesson,
+  deleteLesson,
   upsertUser
 } from './storage.js';
 import { difficultyCode, difficultyLabel, formatDate, safeText, subjectCode, subjectLabel, uid } from './ui.js';
@@ -31,7 +35,8 @@ const adminState = {
   activePanel: 'dashboard',
   notebookFilter: { status: 'all', search: '' },
   highlightedQuestionId: null,
-  dashGradeFilter: 'all'
+  dashGradeFilter: 'all',
+  editingLessonId: null
 };
 
 function ensureAdmin() {
@@ -54,8 +59,14 @@ function populateFormSelects() {
   document.querySelector('#qGrade').innerHTML = GRADES.map((g) => `<option value="${g}">${g}</option>`).join('');
   document.querySelector('#qSubject').innerHTML = SUBJECTS.map((label) => `<option value="${subjectCode(label)}">${label}</option>`).join('');
   document.querySelector('#qDifficulty').innerHTML = DIFFICULTIES.map((label) => `<option value="${difficultyCode(label)}">${label}</option>`).join('');
+
+  document.querySelector('#lessonGrade').innerHTML = GRADES.map((g) => `<option value="${g}">${g}</option>`).join('');
+  document.querySelector('#lessonSubject').innerHTML = SUBJECTS.map((label) => `<option value="${subjectCode(label)}">${label}</option>`).join('');
+
   const topics = loadTopicsBank();
-  document.querySelector('#qTopic').innerHTML = topics.map((topic) => `<option value="${topic.id}">${safeText(topic.label)}</option>`).join('');
+  const topicsOptions = topics.map((topic) => `<option value="${topic.id}">${safeText(topic.label)}</option>`).join('');
+  document.querySelector('#qTopic').innerHTML = topicsOptions;
+  document.querySelector('#lessonTopic').innerHTML = topicsOptions;
 }
 
 function renderQuestionsList() {
@@ -86,16 +97,36 @@ function renderQuestionsList() {
   }
 }
 
+function letterToIndex(letter) {
+  return ['A', 'B', 'C', 'D', 'E'].indexOf(letter);
+}
+
+function indexToLetter(index) {
+  return ['A', 'B', 'C', 'D', 'E'][index] ?? '';
+}
+
 function validateQuestion(payload) {
   if (!payload.statement) return 'Enunciado é obrigatório.';
-  if (payload.options.length < 2) return 'Informe no mínimo 2 alternativas.';
-  if (payload.options.some((o) => !o)) return 'Todas as alternativas preenchidas devem ter texto.';
-  if (payload.correctIndex < 0 || payload.correctIndex >= payload.options.length) return 'Índice da alternativa correta inválido.';
+  if (payload.options.length !== 5 || payload.options.some((o) => !o)) {
+    return 'Preencha todas as alternativas de A até E.';
+  }
+  if (!payload.correctLetter) return 'Selecione a resposta correta.';
+  if (payload.correctIndex < 0 || payload.correctIndex > 4) return 'Resposta correta inválida.';
   return null;
 }
 
 function getFormData() {
-  const options = document.querySelector('#qOptions').value.split('\n').map((item) => item.trim()).filter(Boolean);
+  const options = [
+    document.querySelector('#qOptionA').value.trim(),
+    document.querySelector('#qOptionB').value.trim(),
+    document.querySelector('#qOptionC').value.trim(),
+    document.querySelector('#qOptionD').value.trim(),
+    document.querySelector('#qOptionE').value.trim()
+  ];
+
+  const correctLetter = document.querySelector('#qCorrectLetter').value;
+  const correctIndex = letterToIndex(correctLetter);
+
   return {
     id: adminState.editingId ?? uid('q'),
     grade: document.querySelector('#qGrade').value,
@@ -104,7 +135,8 @@ function getFormData() {
     topicId: document.querySelector('#qTopic').value,
     statement: document.querySelector('#qStatement').value.trim(),
     options,
-    correctIndex: Number(document.querySelector('#qCorrectIndex').value),
+    correctLetter,
+    correctIndex,
     explanation: document.querySelector('#qExplanation').value.trim(),
     status: document.querySelector('#qStatus').value,
     createdAt: new Date().toISOString(),
@@ -120,8 +152,12 @@ function fillQuestionForm(question) {
   document.querySelector('#qDifficulty').value = question.difficulty;
   document.querySelector('#qTopic').value = question.topicId;
   document.querySelector('#qStatement').value = question.statement;
-  document.querySelector('#qOptions').value = question.options.join('\n');
-  document.querySelector('#qCorrectIndex').value = String(question.correctIndex);
+  document.querySelector('#qOptionA').value = question.options[0] ?? '';
+  document.querySelector('#qOptionB').value = question.options[1] ?? '';
+  document.querySelector('#qOptionC').value = question.options[2] ?? '';
+  document.querySelector('#qOptionD').value = question.options[3] ?? '';
+  document.querySelector('#qOptionE').value = question.options[4] ?? '';
+  document.querySelector('#qCorrectLetter').value = question.correctLetter ?? indexToLetter(question.correctIndex);
   document.querySelector('#qExplanation').value = question.explanation;
   document.querySelector('#qStatus').value = question.status;
   document.querySelector('#formTitle').textContent = 'Editar questão';
@@ -130,9 +166,34 @@ function fillQuestionForm(question) {
 function resetQuestionForm() {
   adminState.editingId = null;
   document.querySelector('#questionForm').reset();
-  document.querySelector('#qCorrectIndex').value = '0';
+  document.querySelector('#qCorrectLetter').value = '';
   document.querySelector('#qStatus').value = 'published';
   document.querySelector('#formTitle').textContent = 'Nova questão';
+}
+
+function resetLessonForm() {
+  adminState.editingLessonId = null;
+  document.querySelector('#lessonForm').reset();
+  document.querySelector('#lessonFormFeedback').textContent = '';
+}
+
+
+function renderLessonsPanel() {
+  const topicMap = new Map(loadTopicsBank().map((topic) => [topic.id, topic.label]));
+  const html = getLessons()
+    .map((lesson) => `<tr data-lesson-id="${lesson.id}">
+      <td>${safeText(lesson.title)}</td>
+      <td>${subjectLabel(lesson.subject)}</td>
+      <td>${safeText(lesson.grade)}</td>
+      <td>${safeText(topicMap.get(lesson.topic) ?? lesson.topic)}</td>
+      <td>
+        <button class="btn-secondary" data-action="edit-lesson" data-id="${lesson.id}">Editar</button>
+        <button class="btn-danger" data-action="delete-lesson" data-id="${lesson.id}">Excluir</button>
+      </td>
+    </tr>`)
+    .join('');
+
+  document.querySelector('#lessonsTableBody').innerHTML = html || '<tr><td colspan="5" class="muted">Nenhuma aula cadastrada.</td></tr>';
 }
 
 function collectStudents() {
@@ -540,10 +601,66 @@ function renderSelectedThread() {
 
 function refreshAdminViews() {
   renderQuestionsList();
+  renderLessonsPanel();
   renderDashboard();
   renderUsersPanel();
   renderNotebookPanel();
   renderCommentsPanel();
+}
+
+function bindLessonsCrud() {
+  document.querySelector('#lessonForm').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const feedback = document.querySelector('#lessonFormFeedback');
+
+    const payload = {
+      id: adminState.editingLessonId ?? uid('lesson'),
+      title: document.querySelector('#lessonTitle').value.trim(),
+      url: document.querySelector('#lessonUrl').value.trim(),
+      subject: document.querySelector('#lessonSubject').value,
+      grade: document.querySelector('#lessonGrade').value,
+      topic: document.querySelector('#lessonTopic').value
+    };
+
+    if (!payload.title || !payload.url || !payload.subject || !payload.grade || !payload.topic) {
+      feedback.textContent = 'Preencha título, link, disciplina, série e tópico.';
+      return;
+    }
+
+    if (adminState.editingLessonId) {
+      updateLesson(adminState.editingLessonId, payload);
+      feedback.textContent = 'Aula atualizada com sucesso.';
+    } else {
+      saveLesson(payload);
+      feedback.textContent = 'Aula salva com sucesso.';
+    }
+
+    resetLessonForm();
+    renderLessonsPanel();
+  });
+
+  document.querySelector('#lessonsTableBody').addEventListener('click', (event) => {
+    const id = event.target.dataset.id;
+    if (!id) return;
+
+    if (event.target.dataset.action === 'delete-lesson') {
+      deleteLesson(id);
+      renderLessonsPanel();
+      return;
+    }
+
+    if (event.target.dataset.action === 'edit-lesson') {
+      const lesson = getLessons().find((item) => item.id === id);
+      if (!lesson) return;
+      adminState.editingLessonId = lesson.id;
+      document.querySelector('#lessonTitle').value = lesson.title;
+      document.querySelector('#lessonUrl').value = lesson.url;
+      document.querySelector('#lessonSubject').value = lesson.subject;
+      document.querySelector('#lessonGrade').value = lesson.grade;
+      document.querySelector('#lessonTopic').value = lesson.topic;
+      document.querySelector('#lessonFormFeedback').textContent = 'Editando aula...';
+    }
+  });
 }
 
 function bindQuestionCrud() {
@@ -595,6 +712,7 @@ function bindQuestionCrud() {
     await resetToSeed();
     populateFormSelects();
     resetQuestionForm();
+    resetLessonForm();
     adminState.highlightedQuestionId = null;
     refreshAdminViews();
   });
@@ -789,6 +907,7 @@ async function init() {
   resetQuestionForm();
 
   bindQuestionCrud();
+  bindLessonsCrud();
   bindComments();
   bindUsers();
   bindNotebookPanel();

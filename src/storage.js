@@ -2,6 +2,7 @@ import { COMMENT_STATUS, GRADES, SEED_VERSION, STORAGE_KEYS, USERS } from './con
 
 let inMemoryQuestions = [];
 let inMemoryTopics = [];
+let inMemoryLessons = [];
 
 function nowIso() {
   return new Date().toISOString();
@@ -124,6 +125,17 @@ function normalizeTrainingPlan(plan) {
   };
 }
 
+function normalizeLesson(lesson) {
+  return {
+    id: String(lesson?.id ?? newId('lesson')),
+    title: String(lesson?.title ?? '').trim(),
+    url: String(lesson?.url ?? '').trim(),
+    topic: String(lesson?.topic ?? '').trim(),
+    subject: String(lesson?.subject ?? '').trim(),
+    grade: String(lesson?.grade ?? '').trim()
+  };
+}
+
 function ensureUsersSeeded() {
   const stored = parseJson(localStorage.getItem(STORAGE_KEYS.users), null);
   if (Array.isArray(stored) && stored.length) return;
@@ -136,30 +148,36 @@ export async function initStorageFromSeeds() {
   const shouldReset = localStorage.getItem(STORAGE_KEYS.version) !== SEED_VERSION;
   const hasBank = !!localStorage.getItem(STORAGE_KEYS.questionBank);
   const hasTopics = !!localStorage.getItem(STORAGE_KEYS.topicsBank);
+  const hasLessons = !!localStorage.getItem(STORAGE_KEYS.lessons);
 
-  if (!shouldReset && hasBank && hasTopics) {
+  if (!shouldReset && hasBank && hasTopics && hasLessons) {
     inMemoryQuestions = loadQuestionBank();
     inMemoryTopics = loadTopicsBank();
+    inMemoryLessons = getLessons();
     return;
   }
 
-  const [questionsRes, topicsRes] = await Promise.all([
+  const [questionsRes, topicsRes, lessonsRes] = await Promise.all([
     fetch('./data/questions.seed.json'),
-    fetch('./data/topics.seed.json')
+    fetch('./data/topics.seed.json'),
+    fetch('./data/lessons.seed.json')
   ]);
 
-  const [questionsSeed, topicsSeed] = await Promise.all([questionsRes.json(), topicsRes.json()]);
+  const [questionsSeed, topicsSeed, lessonsSeed] = await Promise.all([questionsRes.json(), topicsRes.json(), lessonsRes.json()]);
   inMemoryQuestions = questionsSeed.map((q) => normalizeQuestion({ ...q, createdAt: nowIso(), updatedAt: nowIso() }));
   inMemoryTopics = Array.isArray(topicsSeed) ? topicsSeed : [];
+  inMemoryLessons = Array.isArray(lessonsSeed) ? lessonsSeed.map(normalizeLesson) : [];
 
   saveQuestionBank(inMemoryQuestions);
   saveTopicsBank(inMemoryTopics);
+  saveLessons(inMemoryLessons);
   localStorage.setItem(STORAGE_KEYS.version, SEED_VERSION);
 }
 
 export function resetToSeed() {
   localStorage.removeItem(STORAGE_KEYS.questionBank);
   localStorage.removeItem(STORAGE_KEYS.topicsBank);
+  localStorage.removeItem(STORAGE_KEYS.lessons);
   localStorage.removeItem(STORAGE_KEYS.version);
   return initStorageFromSeeds();
 }
@@ -354,6 +372,42 @@ export function getTrainingPlanById(planId) {
     if (found) return { userId, ...normalizeTrainingPlan(found) };
   }
   return null;
+}
+
+export function getLessons() {
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.lessons), inMemoryLessons);
+  const lessons = Array.isArray(stored) ? stored.map(normalizeLesson).filter((lesson) => lesson.title && lesson.url && lesson.topic) : [];
+  inMemoryLessons = lessons;
+  return lessons;
+}
+
+export function saveLessons(lessons) {
+  const normalized = Array.isArray(lessons) ? lessons.map(normalizeLesson).filter((lesson) => lesson.title && lesson.url && lesson.topic) : [];
+  inMemoryLessons = normalized;
+  localStorage.setItem(STORAGE_KEYS.lessons, JSON.stringify(normalized));
+  return normalized;
+}
+
+export function saveLesson(lesson) {
+  const all = getLessons();
+  const normalized = normalizeLesson(lesson);
+  all.unshift(normalized);
+  saveLessons(all);
+  return normalized;
+}
+
+export function updateLesson(lessonId, patch) {
+  const all = getLessons();
+  const index = all.findIndex((lesson) => lesson.id === lessonId);
+  if (index < 0) return null;
+  const updated = normalizeLesson({ ...all[index], ...patch, id: lessonId });
+  all[index] = updated;
+  saveLessons(all);
+  return updated;
+}
+
+export function deleteLesson(lessonId) {
+  saveLessons(getLessons().filter((lesson) => lesson.id !== lessonId));
 }
 
 export function getAdminSelectedStudentId() {

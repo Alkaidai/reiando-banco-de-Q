@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   reports: 'bq_question_reports',
   users: 'bq_users',
   trainingPlans: 'bq_trainingPlans',
+  lessons: 'bq_lessons',
   adminSelectedStudentId: 'bq_admin_selectedStudentId'
 };
 

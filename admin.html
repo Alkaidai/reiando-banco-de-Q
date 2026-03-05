@@ -36,6 +36,7 @@
           <button data-panel="users">Usuários</button>
           <button data-panel="notebook">Caderno</button>
           <button data-panel="comments">Comentários</button>
+          <button data-panel="lessons">Aulas</button>
         </nav>
 
         <section id="dashboard" class="panel card">
@@ -94,9 +95,28 @@
             <select id="qDifficulty"></select>
             <select id="qTopic"></select>
             <select id="qStatus"><option value="published">published</option><option value="draft">draft</option></select>
-            <textarea id="qStatement" placeholder="Enunciado" required></textarea>
-            <textarea id="qOptions" placeholder="Uma alternativa por linha" required></textarea>
-            <input id="qCorrectIndex" type="number" min="0" placeholder="Índice da correta (começa em 0)" required />
+
+            <label for="qStatement">Enunciado</label>
+            <textarea id="qStatement" placeholder="Exemplo:
+Qual é o resultado de 3/4 + 1/4?" required></textarea>
+
+            <label>Alternativas (A–E)</label>
+            <input id="qOptionA" placeholder="A)" required />
+            <input id="qOptionB" placeholder="B)" required />
+            <input id="qOptionC" placeholder="C)" required />
+            <input id="qOptionD" placeholder="D)" required />
+            <input id="qOptionE" placeholder="E)" required />
+
+            <label for="qCorrectLetter">Resposta correta</label>
+            <select id="qCorrectLetter" required>
+              <option value="">Selecione</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
+              <option value="E">E</option>
+            </select>
+
             <textarea id="qExplanation" placeholder="Explicação" required></textarea>
             <button class="btn-primary" type="submit">Salvar questão</button>
             <p id="formFeedback" class="error-text"></p>
@@ -151,6 +171,24 @@
           <div id="adminNotebookList"></div>
         </section>
 
+
+        <section id="lessons" class="panel card hidden">
+          <h2>Aulas</h2>
+          <form id="lessonForm" class="question-form">
+            <input id="lessonTitle" placeholder="Título da aula" required />
+            <input id="lessonUrl" placeholder="Link da aula" required />
+            <select id="lessonSubject"></select>
+            <select id="lessonGrade"></select>
+            <select id="lessonTopic"></select>
+            <button class="btn-primary" type="submit">Salvar aula</button>
+            <p id="lessonFormFeedback" class="error-text"></p>
+          </form>
+
+          <table class="table">
+            <thead><tr><th>Título</th><th>Disciplina</th><th>Série</th><th>Tópico</th><th>Ações</th></tr></thead>
+            <tbody id="lessonsTableBody"></tbody>
+          </table>
+        </section>
         <section id="comments" class="panel card hidden">
           <h2>Comentários</h2>
           <select id="commentFilter">

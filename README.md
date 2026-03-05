@@ -101,3 +101,10 @@ Abra:
 
 ## Logo
 Coloque a logo em `assets/images/logo-cade-o-xis.png` para aparecer no topo do aluno e admin.
+
+## Cadastro de aulas (Admin)
+- Acesse `http://localhost:4173/admin.html` com `admin / admin123`.
+- Abra a aba **Aulas**.
+- Preencha título, link, disciplina, série e tópico.
+- Clique em **Salvar aula** para persistir no `localStorage`.
+- As aulas cadastradas passam a aparecer na aba **Aulas** das questões na área do aluno.
