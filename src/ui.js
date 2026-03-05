@@ -25,3 +25,18 @@ export function uid(prefix = 'id') {
 export function optionLetter(index) {
   return String.fromCharCode(65 + index);
 }
+
+export function showToast(message) {
+  const root = document.querySelector('#toastRoot');
+  if (!root) {
+    return;
+  }
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  root.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('hide');
+    setTimeout(() => toast.remove(), 220);
+  }, 2200);
+}

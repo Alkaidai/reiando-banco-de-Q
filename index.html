@@ -51,6 +51,11 @@
           </section>
 
           <section id="dashboardData" class="hidden">
+            <article class="card" id="recommendedTrainingBlock">
+              <h3>📌 Treino recomendado</h3>
+              <div id="recommendedTrainingContent"></div>
+            </article>
+
             <article class="card">
               <h3>Tópicos mais fracos</h3>
               <ul id="weakTopics"></ul>
@@ -87,6 +92,7 @@
       </section>
     </main>
 
+    <div id="toastRoot" class="toast-root"></div>
     <script type="module" src="./src/app.js"></script>
   </body>
 </html>

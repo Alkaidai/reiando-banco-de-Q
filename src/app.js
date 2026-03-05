@@ -3,6 +3,7 @@ import {
   addAttempt,
   addComment,
   addQuestionReport,
+  addTrainingPlan,
   authenticate,
   getAttempts,
   getCurrentUser,
@@ -15,7 +16,7 @@ import {
   setCurrentUser,
   upsertNotebookItem
 } from './storage.js';
-import { difficultyLabel, formatDate, optionLetter, safeText, subjectLabel } from './ui.js';
+import { difficultyLabel, formatDate, optionLetter, safeText, showToast, subjectLabel, uid } from './ui.js';
 
 const state = {
   answers: {},
@@ -24,6 +25,9 @@ const state = {
   training: {
     plan: null,
     questionIds: []
+  },
+  recommendation: {
+    lastCreatedPlanId: null
   }
 };
 
@@ -106,6 +110,86 @@ function weakestTopics(attempts) {
     .slice(0, 3);
 }
 
+function getRecommendedTrainingData(attempts) {
+  const questionsMap = new Map(loadQuestionBank().map((q) => [q.id, q]));
+  const topicsMap = new Map(loadTopicsBank().map((t) => [t.id, t.label]));
+  const agg = new Map();
+
+  attempts.forEach((attempt) => {
+    const q = questionsMap.get(attempt.questionId);
+    if (!q?.topicId) return;
+    const prev = agg.get(q.topicId) ?? {
+      topicId: q.topicId,
+      label: topicsMap.get(q.topicId) ?? q.topicId,
+      total: 0,
+      errors: 0
+    };
+    prev.total += 1;
+    if (!attempt.isCorrect) prev.errors += 1;
+    agg.set(q.topicId, prev);
+  });
+
+  const eligible = [...agg.values()]
+    .filter((x) => x.total >= 3)
+    .map((x) => ({ ...x, errorRate: Math.round((x.errors / x.total) * 100) }))
+    .sort((a, b) => b.errorRate - a.errorRate || b.errors - a.errors);
+
+  if (!eligible.length) return null;
+
+  return {
+    ...eligible[0],
+    qty: 10,
+    distribution: { easy: 3, medium: 5, hard: 2 }
+  };
+}
+
+function pickRecommendedQuestions({ userId, topicId, qty, distribution, gradeLevel }) {
+  const questions = loadQuestionBank().filter((q) => q.status !== 'draft');
+  const recentQuestionIds = new Set(
+    getAttempts(userId)
+      .sort((a, b) => new Date(b.answeredAt).getTime() - new Date(a.answeredAt).getTime())
+      .slice(0, 30)
+      .map((a) => a.questionId)
+  );
+
+  const base = questions.filter((q) => q.topicId === topicId && (!gradeLevel || q.grade === gradeLevel));
+
+  const byDifficulty = {
+    easy: base.filter((q) => q.difficulty === 'easy'),
+    medium: base.filter((q) => q.difficulty === 'medium'),
+    hard: base.filter((q) => q.difficulty === 'hard')
+  };
+
+  const chosen = [];
+  for (const diff of ['easy', 'medium', 'hard']) {
+    const need = distribution[diff];
+    if (!need) continue;
+
+    const preferred = byDifficulty[diff].filter((q) => !recentQuestionIds.has(q.id));
+    const fallback = byDifficulty[diff];
+    const pool = [...preferred, ...fallback.filter((q) => !preferred.some((p) => p.id === q.id))];
+
+    for (const q of pool) {
+      if (chosen.length >= qty) break;
+      if (chosen.some((x) => x.id === q.id)) continue;
+      const currentDiffCount = chosen.filter((x) => x.difficulty === diff).length;
+      if (currentDiffCount >= need) continue;
+      chosen.push(q);
+    }
+  }
+
+  if (chosen.length < qty) {
+    const fallbackPool = [...base.filter((q) => !recentQuestionIds.has(q.id)), ...base];
+    for (const q of fallbackPool) {
+      if (chosen.length >= qty) break;
+      if (chosen.some((x) => x.id === q.id)) continue;
+      chosen.push(q);
+    }
+  }
+
+  return chosen.slice(0, qty).map((q) => q.id);
+}
+
 function renderAuthState() {
   const user = currentUser();
   const loggedIn = !!user;
@@ -146,6 +230,32 @@ function renderTrainingHeader() {
     : `<strong>Modo Treino</strong> — Plano ${safeText(state.training.plan.id)} • ${answered}/${total} respondidas`;
 }
 
+function renderRecommendation(attempts) {
+  const container = document.querySelector('#recommendedTrainingContent');
+  const user = currentUser();
+  if (!container || !user) return;
+
+  const recommendation = getRecommendedTrainingData(attempts);
+  if (!recommendation) {
+    container.innerHTML = '<p class="muted">Responda mais algumas questões para receber um treino recomendado.</p>';
+    return;
+  }
+
+  const startButton = state.recommendation.lastCreatedPlanId
+    ? `<a class="btn-primary" href="./index.html?trainingPlanId=${state.recommendation.lastCreatedPlanId}">Começar treino</a>`
+    : '';
+
+  container.innerHTML = `
+    <p><strong>${safeText(recommendation.label)}</strong></p>
+    <p>Taxa de erro: <strong>${recommendation.errorRate}%</strong> (${recommendation.errors}/${recommendation.total})</p>
+    <p>Distribuição: 3F / 5M / 2D</p>
+    <div class="actions-row">
+      <button class="btn-primary" data-action="generate-recommended-training" data-topic-id="${recommendation.topicId}">Gerar treino agora</button>
+      ${startButton}
+    </div>
+  `;
+}
+
 function renderDashboard() {
   const { attempts, answered, correct, rate } = dashboardMetrics();
   const hasData = attempts.length > 0;
@@ -156,6 +266,8 @@ function renderDashboard() {
 
   document.querySelector('#dashboardEmpty').classList.toggle('hidden', hasData);
   document.querySelector('#dashboardData').classList.toggle('hidden', !hasData);
+
+  renderRecommendation(attempts);
 
   const weak = weakestTopics(attempts);
   document.querySelector('#weakTopics').innerHTML = weak.length
@@ -523,6 +635,43 @@ function bindDashboardActions() {
   document.querySelector('#reviewNow').addEventListener('click', (event) => {
     if (event.target.dataset.action === 'refazer') scrollToQuestion(event.target.dataset.questionId);
   });
+
+  document.querySelector('#recommendedTrainingContent').addEventListener('click', (event) => {
+    if (event.target.dataset.action !== 'generate-recommended-training') return;
+
+    const user = currentUser();
+    if (!user) return;
+
+    const topicId = event.target.dataset.topicId;
+    const recommendation = getRecommendedTrainingData(getAttempts(user.username));
+    if (!recommendation || recommendation.topicId !== topicId) return;
+
+    const questionIds = pickRecommendedQuestions({
+      userId: user.username,
+      topicId,
+      qty: 10,
+      distribution: recommendation.distribution,
+      gradeLevel: user.gradeLevel ?? null
+    });
+
+    if (!questionIds.length) {
+      showToast('Não foi possível gerar treino recomendado agora.');
+      return;
+    }
+
+    const created = addTrainingPlan(user.username, {
+      id: uid('tp'),
+      createdAt: new Date().toISOString(),
+      topic: recommendation.topicId,
+      qty: 10,
+      distribution: recommendation.distribution,
+      questionIds
+    });
+
+    state.recommendation.lastCreatedPlanId = created.id;
+    showToast('Treino criado com sucesso');
+    renderDashboard();
+  });
 }
 
 function bindAuth() {
@@ -556,6 +705,7 @@ function bindAuth() {
     logout();
     state.answers = {};
     state.activeQuestionTab = {};
+    state.recommendation.lastCreatedPlanId = null;
     renderAuthState();
     activateTab('panel-dashboard');
   });
