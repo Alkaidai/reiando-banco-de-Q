@@ -136,6 +136,34 @@ function normalizeLesson(lesson) {
   };
 }
 
+function normalizeTopic(topic) {
+  const name = String(topic?.name ?? topic?.label ?? topic?.id ?? '').trim();
+  const gradeFromLegacy = Array.isArray(topic?.grades) && topic.grades.length === 1 ? String(topic.grades[0]) : 'all';
+  const grade = String(topic?.grade ?? gradeFromLegacy ?? 'all').trim() || 'all';
+  return {
+    id: String(topic?.id ?? name.toLowerCase().replace(/[^a-z0-9]+/gi, '-')).trim(),
+    name,
+    label: name,
+    subject: String(topic?.subject ?? '').trim(),
+    grade,
+    status: topic?.status === 'inactive' ? 'inactive' : 'active'
+  };
+}
+
+export async function ensureTopicsSeedLoaded() {
+  const existing = parseJson(localStorage.getItem(STORAGE_KEYS.topicsBank), null);
+  if (Array.isArray(existing) && existing.length) {
+    inMemoryTopics = existing.map(normalizeTopic);
+    return inMemoryTopics;
+  }
+
+  const topicsRes = await fetch('./data/topics.seed.json');
+  const topicsSeed = await topicsRes.json();
+  const normalized = Array.isArray(topicsSeed) ? topicsSeed.map(normalizeTopic) : [];
+  saveTopicsBank(normalized);
+  return normalized;
+}
+
 function ensureUsersSeeded() {
   const stored = parseJson(localStorage.getItem(STORAGE_KEYS.users), null);
   if (Array.isArray(stored) && stored.length) return;
@@ -144,6 +172,7 @@ function ensureUsersSeeded() {
 
 export async function initStorageFromSeeds() {
   ensureUsersSeeded();
+  await ensureTopicsSeedLoaded();
 
   const shouldReset = localStorage.getItem(STORAGE_KEYS.version) !== SEED_VERSION;
   const hasBank = !!localStorage.getItem(STORAGE_KEYS.questionBank);
@@ -152,7 +181,7 @@ export async function initStorageFromSeeds() {
 
   if (!shouldReset && hasBank && hasTopics && hasLessons) {
     inMemoryQuestions = loadQuestionBank();
-    inMemoryTopics = loadTopicsBank();
+    inMemoryTopics = getTopics();
     inMemoryLessons = getLessons();
     return;
   }
@@ -165,7 +194,7 @@ export async function initStorageFromSeeds() {
 
   const [questionsSeed, topicsSeed, lessonsSeed] = await Promise.all([questionsRes.json(), topicsRes.json(), lessonsRes.json()]);
   inMemoryQuestions = questionsSeed.map((q) => normalizeQuestion({ ...q, createdAt: nowIso(), updatedAt: nowIso() }));
-  inMemoryTopics = Array.isArray(topicsSeed) ? topicsSeed : [];
+  inMemoryTopics = Array.isArray(topicsSeed) ? topicsSeed.map(normalizeTopic) : [];
   inMemoryLessons = Array.isArray(lessonsSeed) ? lessonsSeed.map(normalizeLesson) : [];
 
   saveQuestionBank(inMemoryQuestions);
@@ -195,13 +224,47 @@ export function saveQuestionBank(bank) {
 }
 
 export function loadTopicsBank() {
-  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.topicsBank), inMemoryTopics);
-  return Array.isArray(stored) ? stored : [];
+  return getTopics();
 }
 
 export function saveTopicsBank(topics) {
-  inMemoryTopics = Array.isArray(topics) ? topics : [];
-  localStorage.setItem(STORAGE_KEYS.topicsBank, JSON.stringify(inMemoryTopics));
+  const normalized = Array.isArray(topics) ? topics.map(normalizeTopic).filter((topic) => topic.id && topic.name) : [];
+  inMemoryTopics = normalized;
+  localStorage.setItem(STORAGE_KEYS.topicsBank, JSON.stringify(normalized));
+}
+
+export function getTopics(options = {}) {
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.topicsBank), inMemoryTopics);
+  const list = Array.isArray(stored) ? stored.map(normalizeTopic).filter((topic) => topic.id && topic.name) : [];
+  inMemoryTopics = list;
+  if (options.activeOnly) return list.filter((topic) => topic.status === 'active');
+  return list;
+}
+
+export function createTopic(topic) {
+  const all = getTopics();
+  const normalized = normalizeTopic(topic);
+  all.push(normalized);
+  saveTopicsBank(all);
+  return normalized;
+}
+
+export function updateTopic(id, patch = {}) {
+  const all = getTopics();
+  const index = all.findIndex((topic) => topic.id === id);
+  if (index < 0) return null;
+  const updated = normalizeTopic({ ...all[index], ...patch, id });
+  all[index] = updated;
+  saveTopicsBank(all);
+  return updated;
+}
+
+export function setTopicStatus(id, status) {
+  return updateTopic(id, { status });
+}
+
+export function deleteTopic(id) {
+  saveTopicsBank(getTopics().filter((topic) => topic.id !== id));
 }
 
 export function loadUsers() {

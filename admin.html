@@ -37,6 +37,7 @@
           <button data-panel="notebook">Caderno</button>
           <button data-panel="comments">Comentários</button>
           <button data-panel="lessons">Aulas</button>
+          <button data-panel="topics">Tópicos</button>
         </nav>
 
         <section id="dashboard" class="panel card">
@@ -189,6 +190,27 @@ Qual é o resultado de 3/4 + 1/4?" required></textarea>
             <tbody id="lessonsTableBody"></tbody>
           </table>
         </section>
+
+        <section id="topics" class="panel card hidden">
+          <h2>Tópicos</h2>
+          <form id="topicForm" class="question-form">
+            <input id="topicName" placeholder="Nome do tópico" required />
+            <select id="topicSubject"></select>
+            <select id="topicGrade"></select>
+            <select id="topicStatus">
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </select>
+            <button class="btn-primary" type="submit">Salvar tópico</button>
+            <p id="topicFormFeedback" class="error-text"></p>
+          </form>
+
+          <table class="table">
+            <thead><tr><th>Nome</th><th>Disciplina</th><th>Série</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="topicsTableBody"></tbody>
+          </table>
+        </section>
+
         <section id="comments" class="panel card hidden">
           <h2>Comentários</h2>
           <select id="commentFilter">

@@ -3,16 +3,18 @@ import {
   addReply,
   addTrainingPlan,
   authenticate,
+  createTopic,
+  deleteTopic,
   getAdminSelectedStudentId,
   getAttempts,
   getCurrentUser,
   getNotebook,
   getLessons,
+  getTopics,
   getTrainingPlans,
   getUsersByRole,
   initStorageFromSeeds,
   loadQuestionBank,
-  loadTopicsBank,
   loadUsers,
   logout,
   resetToSeed,
@@ -21,6 +23,8 @@ import {
   setAdminSelectedStudentId,
   setCommentStatus,
   setCurrentUser,
+  setTopicStatus,
+  updateTopic,
   updateLesson,
   deleteLesson,
   upsertUser
@@ -36,7 +40,8 @@ const adminState = {
   notebookFilter: { status: 'all', search: '' },
   highlightedQuestionId: null,
   dashGradeFilter: 'all',
-  editingLessonId: null
+  editingLessonId: null,
+  editingTopicId: null
 };
 
 function ensureAdmin() {
@@ -63,14 +68,17 @@ function populateFormSelects() {
   document.querySelector('#lessonGrade').innerHTML = GRADES.map((g) => `<option value="${g}">${g}</option>`).join('');
   document.querySelector('#lessonSubject').innerHTML = SUBJECTS.map((label) => `<option value="${subjectCode(label)}">${label}</option>`).join('');
 
-  const topics = loadTopicsBank();
-  const topicsOptions = topics.map((topic) => `<option value="${topic.id}">${safeText(topic.label)}</option>`).join('');
+  document.querySelector('#topicGrade').innerHTML = ['all', ...GRADES].map((g) => `<option value="${g}">${g === 'all' ? 'Todas' : g}</option>`).join('');
+  document.querySelector('#topicSubject').innerHTML = SUBJECTS.map((label) => `<option value="${subjectCode(label)}">${label}</option>`).join('');
+
+  const topics = getTopics({ activeOnly: true });
+  const topicsOptions = topics.map((topic) => `<option value="${topic.id}">${safeText(topic.name)}</option>`).join('');
   document.querySelector('#qTopic').innerHTML = topicsOptions;
   document.querySelector('#lessonTopic').innerHTML = topicsOptions;
 }
 
 function renderQuestionsList() {
-  const topics = loadTopicsBank();
+  const topics = getTopics();
   const topicMap = new Map(topics.map((t) => [t.id, t.label]));
   const html = loadQuestionBank()
     .map((q) => {
@@ -177,9 +185,17 @@ function resetLessonForm() {
   document.querySelector('#lessonFormFeedback').textContent = '';
 }
 
+function resetTopicForm() {
+  adminState.editingTopicId = null;
+  document.querySelector('#topicForm').reset();
+  document.querySelector('#topicStatus').value = 'active';
+  document.querySelector('#topicGrade').value = 'all';
+  document.querySelector('#topicFormFeedback').textContent = '';
+}
+
 
 function renderLessonsPanel() {
-  const topicMap = new Map(loadTopicsBank().map((topic) => [topic.id, topic.label]));
+  const topicMap = new Map(getTopics().map((topic) => [topic.id, topic.name]));
   const html = getLessons()
     .map((lesson) => `<tr data-lesson-id="${lesson.id}">
       <td>${safeText(lesson.title)}</td>
@@ -194,6 +210,24 @@ function renderLessonsPanel() {
     .join('');
 
   document.querySelector('#lessonsTableBody').innerHTML = html || '<tr><td colspan="5" class="muted">Nenhuma aula cadastrada.</td></tr>';
+}
+
+function renderTopicsPanel() {
+  const html = getTopics()
+    .map((topic) => `<tr>
+      <td>${safeText(topic.name)}</td>
+      <td>${subjectLabel(topic.subject)}</td>
+      <td>${safeText(topic.grade)}</td>
+      <td>${safeText(topic.status)}</td>
+      <td>
+        <button class="btn-secondary" data-action="edit-topic" data-id="${topic.id}">Editar</button>
+        <button class="btn-secondary" data-action="deactivate-topic" data-id="${topic.id}">Desativar</button>
+        <button class="btn-danger" data-action="delete-topic" data-id="${topic.id}">Excluir</button>
+      </td>
+    </tr>`)
+    .join('');
+
+  document.querySelector('#topicsTableBody').innerHTML = html || '<tr><td colspan="5" class="muted">Nenhum tópico cadastrado.</td></tr>';
 }
 
 function collectStudents() {
@@ -229,7 +263,7 @@ function renderDashboard() {
   const attempts = getAttempts();
   const users = loadUsers();
   const students = users.filter((u) => u.role === 'student');
-  const topicsMap = new Map(loadTopicsBank().map((t) => [t.id, t.label]));
+  const topicsMap = new Map(getTopics().map((t) => [t.id, t.name]));
   const questionsMap = new Map(questions.map((q) => [q.id, q]));
 
   const published = questions.filter((q) => (q.status ?? 'published') !== 'draft').length;
@@ -279,7 +313,7 @@ function renderDashboard() {
   document.querySelector('#dashWorstTopics').innerHTML = globalWeakTopics.length
     ? globalWeakTopics
         .slice(0, 10)
-        .map((t) => `<li>${safeText(t.label)} — erro ${t.errorRate}% (${t.errors}/${t.total})</li>`)
+        .map((t) => `<li>${safeText(t.name)} — erro ${t.errorRate}% (${t.errors}/${t.total})</li>`)
         .join('')
     : '<li class="muted">Sem dados suficientes ainda.</li>';
 
@@ -371,10 +405,10 @@ function renderUsersPanel() {
 
   const questions = loadQuestionBank();
   const questionsMap = new Map(questions.map((q) => [q.id, q]));
-  const topicsMap = new Map(loadTopicsBank().map((t) => [t.id, t.label]));
+  const topicsMap = new Map(getTopics().map((t) => [t.id, t.name]));
   const attempts = getAttempts(adminState.selectedUserId).sort((a, b) => new Date(b.answeredAt).getTime() - new Date(a.answeredAt).getTime());
   const stats = buildStatsForAttempts(attempts, questionsMap, topicsMap);
-  const topics = loadTopicsBank();
+  const topics = getTopics({ activeOnly: true });
 
   const trainingHistory = getTrainingPlans(selected.username).slice(0, 5);
 
@@ -385,7 +419,7 @@ function renderUsersPanel() {
     <h4>Tópicos mais fracos</h4>
     <ul>
       ${stats.weakTopics.length
-        ? stats.weakTopics.slice(0, 5).map((t) => `<li>${safeText(t.label)} — erro ${t.errorRate}% (${t.errors}/${t.total})</li>`).join('')
+        ? stats.weakTopics.slice(0, 5).map((t) => `<li>${safeText(t.name)} — erro ${t.errorRate}% (${t.errors}/${t.total})</li>`).join('')
         : '<li class="muted">Sem dados.</li>'}
     </ul>
     <h4>Tentativas recentes (20)</h4>
@@ -404,7 +438,7 @@ function renderUsersPanel() {
     <h4>GERAR TREINO</h4>
     <div class="question-form">
       <select id="trainingTopic">
-        ${topics.map((t) => `<option value="${t.id}">${safeText(t.label)}</option>`).join('')}
+        ${topics.map((t) => `<option value="${t.id}">${safeText(t.name)}</option>`).join('')}
       </select>
       <select id="trainingQty">
         <option value="10">10</option><option value="15">15</option><option value="20">20</option>
@@ -514,7 +548,7 @@ function renderNotebookPanel() {
 function listComments() {
   const filter = document.querySelector('#commentFilter').value;
   const questions = loadQuestionBank();
-  const topics = new Map(loadTopicsBank().map((t) => [t.id, t.label]));
+  const topics = new Map(getTopics().map((t) => [t.id, t.name]));
   const rows = [];
 
   questions.forEach((question) => {
@@ -600,12 +634,72 @@ function renderSelectedThread() {
 }
 
 function refreshAdminViews() {
+  populateFormSelects();
   renderQuestionsList();
   renderLessonsPanel();
+  renderTopicsPanel();
   renderDashboard();
   renderUsersPanel();
   renderNotebookPanel();
   renderCommentsPanel();
+}
+
+function bindTopicsCrud() {
+  document.querySelector('#topicForm').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const feedback = document.querySelector('#topicFormFeedback');
+    const payload = {
+      id: adminState.editingTopicId ?? uid('topic'),
+      name: document.querySelector('#topicName').value.trim(),
+      subject: document.querySelector('#topicSubject').value,
+      grade: document.querySelector('#topicGrade').value,
+      status: document.querySelector('#topicStatus').value
+    };
+
+    if (!payload.name || !payload.subject || !payload.grade || !payload.status) {
+      feedback.textContent = 'Preencha nome, disciplina, série e status.';
+      return;
+    }
+
+    if (adminState.editingTopicId) {
+      updateTopic(adminState.editingTopicId, payload);
+      feedback.textContent = 'Tópico atualizado com sucesso.';
+    } else {
+      createTopic(payload);
+      feedback.textContent = 'Tópico criado com sucesso.';
+    }
+
+    resetTopicForm();
+    refreshAdminViews();
+  });
+
+  document.querySelector('#topicsTableBody').addEventListener('click', (event) => {
+    const id = event.target.dataset.id;
+    if (!id) return;
+
+    if (event.target.dataset.action === 'delete-topic') {
+      deleteTopic(id);
+      refreshAdminViews();
+      return;
+    }
+
+    if (event.target.dataset.action === 'deactivate-topic') {
+      setTopicStatus(id, 'inactive');
+      refreshAdminViews();
+      return;
+    }
+
+    if (event.target.dataset.action === 'edit-topic') {
+      const topic = getTopics().find((item) => item.id === id);
+      if (!topic) return;
+      adminState.editingTopicId = topic.id;
+      document.querySelector('#topicName').value = topic.name;
+      document.querySelector('#topicSubject').value = topic.subject;
+      document.querySelector('#topicGrade').value = topic.grade;
+      document.querySelector('#topicStatus').value = topic.status;
+      document.querySelector('#topicFormFeedback').textContent = 'Editando tópico...';
+    }
+  });
 }
 
 function bindLessonsCrud() {
@@ -905,9 +999,11 @@ async function init() {
 
   populateFormSelects();
   resetQuestionForm();
+  resetTopicForm();
 
   bindQuestionCrud();
   bindLessonsCrud();
+  bindTopicsCrud();
   bindComments();
   bindUsers();
   bindNotebookPanel();

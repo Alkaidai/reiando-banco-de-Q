@@ -8,10 +8,10 @@ import {
   getAttempts,
   getCurrentUser,
   getNotebook,
+  getTopics,
   getTrainingPlanById,
   initStorageFromSeeds,
   loadQuestionBank,
-  loadTopicsBank,
   logout,
   setCurrentUser,
   upsertNotebookItem
@@ -50,7 +50,7 @@ function currentUserId() {
 }
 
 function getTopicLabel(topics, topicId) {
-  return topics.find((topic) => topic.id === topicId)?.label ?? '—';
+  return topics.find((topic) => topic.id === topicId)?.name ?? '—';
 }
 
 function filteredQuestions() {
@@ -88,7 +88,7 @@ function dashboardMetrics() {
 
 function weakestTopics(attempts) {
   const questions = new Map(loadQuestionBank().map((q) => [q.id, q]));
-  const topicMap = new Map(loadTopicsBank().map((t) => [t.id, t.label]));
+  const topicMap = new Map(getTopics().map((t) => [t.id, t.name]));
   const agg = new Map();
 
   attempts.forEach((attempt) => {
@@ -114,7 +114,7 @@ function weakestTopics(attempts) {
 
 function getRecommendedTrainingData(attempts) {
   const questionsMap = new Map(loadQuestionBank().map((q) => [q.id, q]));
-  const topicsMap = new Map(loadTopicsBank().map((t) => [t.id, t.label]));
+  const topicsMap = new Map(getTopics().map((t) => [t.id, t.name]));
   const agg = new Map();
 
   attempts.forEach((attempt) => {
@@ -369,7 +369,7 @@ function questionTabPanel(tab, question, answer, user, notebookItem) {
 
 function renderQuestions() {
   const questions = filteredQuestions();
-  const topics = loadTopicsBank();
+  const topics = getTopics();
   const user = currentUser();
   const notebookByQuestionId = new Map(getNotebook(currentUserId()).map((n) => [n.questionId, n]));
 
@@ -449,7 +449,7 @@ function notebookItemMeta(item, question) {
 }
 
 function notebookTopicLabel(topicId) {
-  return loadTopicsBank().find((topic) => topic.id === topicId)?.label ?? topicId ?? '—';
+  return getTopics().find((topic) => topic.id === topicId)?.name ?? topicId ?? '—';
 }
 
 function filteredNotebookItems(items, questionsById) {
@@ -543,12 +543,12 @@ function bindNotebookFilters() {
 }
 
 function hydrateSelects() {
-  const topics = loadTopicsBank();
+  const topics = getTopics({ activeOnly: true });
   const topicSelect = document.querySelector('#filterTopicId');
-  topicSelect.innerHTML = '<option value="">Todos os tópicos</option>' + topics.map((t) => `<option value="${t.id}">${safeText(t.label)}</option>`).join('');
+  topicSelect.innerHTML = '<option value="">Todos os tópicos</option>' + topics.map((t) => `<option value="${t.id}">${safeText(t.name)}</option>`).join('');
 
   const notebookTopicSelect = document.querySelector('#notebookFilterTopicId');
-  notebookTopicSelect.innerHTML = '<option value="">Todos os tópicos</option>' + topics.map((t) => `<option value="${t.id}">${safeText(t.label)}</option>`).join('');
+  notebookTopicSelect.innerHTML = '<option value="">Todos os tópicos</option>' + topics.map((t) => `<option value="${t.id}">${safeText(t.name)}</option>`).join('');
 }
 
 function bindQuestionActions() {

@@ -84,6 +84,7 @@ admin.html
   - campos obrigatórios,
   - mínimo de 2 alternativas,
   - índice da correta dentro do range.
+- Aba **Tópicos** com CRUD completo (criar/editar/desativar/excluir) persistido em `localStorage`.
 - Lista de questões com resumo e ações editar/excluir.
 - Moderação de comentários (responder, ocultar, reabrir).
 - Botão **Reset seed** para restaurar os dados de exemplo.
