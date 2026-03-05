@@ -73,6 +73,7 @@ admin.html
 - Card de questão com abas internas: Gabarito comentado, Aulas, Comentários, Caderno e Notificar erro.
 - Fluxo de resposta com confirmar/travar alternativas/feedback/explicação.
 - Aba **Caderno de erros** com notas editáveis e status (`pending`/`mastered`).
+- Na aba **Notificar erro**, aluno pode enviar report com tipo e descrição para triagem do admin.
 
 ### Admin (`admin.html`)
 - Login admin obrigatório.
@@ -85,6 +86,7 @@ admin.html
   - mínimo de 2 alternativas,
   - índice da correta dentro do range.
 - Aba **Tópicos** com CRUD completo (criar/editar/desativar/excluir) persistido em `localStorage`.
+- Aba **Erros reportados** com triagem completa (open/resolved/ignored), nota do admin e atalho para abrir a questão.
 - Lista de questões com resumo e ações editar/excluir.
 - Moderação de comentários (responder, ocultar, reabrir).
 - Botão **Reset seed** para restaurar os dados de exemplo.

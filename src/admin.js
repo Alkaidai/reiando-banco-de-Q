@@ -5,6 +5,7 @@ import {
   authenticate,
   createTopic,
   deleteTopic,
+  getReports,
   getAdminSelectedStudentId,
   getAttempts,
   getCurrentUser,
@@ -23,7 +24,9 @@ import {
   setAdminSelectedStudentId,
   setCommentStatus,
   setCurrentUser,
+  setReportStatus,
   setTopicStatus,
+  updateReport,
   updateTopic,
   updateLesson,
   deleteLesson,
@@ -38,6 +41,8 @@ const adminState = {
   selectedUserId: null,
   activePanel: 'dashboard',
   notebookFilter: { status: 'all', search: '' },
+  reportsFilter: { status: 'all', search: '' },
+  selectedReportId: null,
   highlightedQuestionId: null,
   dashGradeFilter: 'all',
   editingLessonId: null,
@@ -633,6 +638,71 @@ function renderSelectedThread() {
   });
 }
 
+function filteredReports() {
+  const { status, search } = adminState.reportsFilter;
+  return getReports()
+    .filter((report) => (status === 'all' ? true : report.status === status))
+    .filter((report) => {
+      if (!search) return true;
+      const hay = `${report.type} ${report.message} ${report.questionMeta?.preview ?? ''} ${report.createdBy?.username ?? ''}`.toLowerCase();
+      return hay.includes(search);
+    });
+}
+
+function renderReportDetails() {
+  const container = document.querySelector('#reportDetails');
+  const report = getReports().find((item) => item.id === adminState.selectedReportId);
+  if (!report) {
+    container.innerHTML = '<p class="muted">Selecione um report para triagem.</p>';
+    return;
+  }
+
+  const question = loadQuestionBank().find((q) => q.id === report.questionId);
+  container.innerHTML = `
+    <h4>Report ${safeText(report.id)}</h4>
+    <p><strong>Status:</strong> ${safeText(report.status)}</p>
+    <p><strong>Tipo:</strong> ${safeText(report.type)}</p>
+    <p><strong>Autor:</strong> ${safeText(report.createdBy?.username ?? '-')} • ${formatDate(report.createdAt)}</p>
+    <p><strong>Mensagem:</strong> ${safeText(report.message)}</p>
+    <p><strong>Questão:</strong> ${safeText(report.questionMeta?.preview ?? '')}</p>
+    ${question
+      ? `<div class="card">
+        <p><strong>Enunciado completo:</strong> ${safeText(question.statement)}</p>
+        <ul>${question.options.map((opt, idx) => `<li>${String.fromCharCode(65 + idx)}) ${safeText(opt)}</li>`).join('')}</ul>
+        <button class="btn-secondary" data-action="open-question-from-report" data-question-id="${question.id}">Abrir questão</button>
+      </div>`
+      : '<p class="muted">Questão não encontrada.</p>'}
+    <label>Nota do admin</label>
+    <textarea id="reportAdminNote">${safeText(report.adminNote ?? '')}</textarea>
+    <div class="actions-row">
+      <button class="btn-primary" data-action="report-resolve" data-id="${report.id}">Marcar como Resolvido</button>
+      <button class="btn-secondary" data-action="report-ignore" data-id="${report.id}">Marcar como Ignorado</button>
+      <button class="btn-secondary" data-action="report-reopen" data-id="${report.id}">Reabrir</button>
+    </div>
+  `;
+}
+
+function renderReportsPanel() {
+  const rows = filteredReports();
+  document.querySelector('#reportsTableBody').innerHTML = rows.length
+    ? rows
+        .map(
+          (report) => `<tr>
+            <td>${formatDate(report.createdAt)}</td>
+            <td>${safeText(report.type)}</td>
+            <td>${safeText(report.status)}</td>
+            <td>${safeText(report.questionMeta?.grade ?? '-')} / ${safeText(subjectLabel(report.questionMeta?.subject ?? '-'))} / ${safeText(report.questionMeta?.topic ?? '-')}</td>
+            <td>${safeText((report.questionMeta?.preview ?? '').slice(0, 80))}</td>
+            <td>${safeText(report.createdBy?.username ?? '-')}</td>
+            <td><button class="btn-secondary" data-action="view-report" data-id="${report.id}">Ver</button></td>
+          </tr>`
+        )
+        .join('')
+    : '<tr><td colspan="7" class="muted">Nenhum report para os filtros atuais.</td></tr>';
+
+  renderReportDetails();
+}
+
 function refreshAdminViews() {
   populateFormSelects();
   renderQuestionsList();
@@ -642,6 +712,7 @@ function refreshAdminViews() {
   renderUsersPanel();
   renderNotebookPanel();
   renderCommentsPanel();
+  renderReportsPanel();
 }
 
 function bindTopicsCrud() {
@@ -949,6 +1020,50 @@ function bindComments() {
   });
 }
 
+function bindReports() {
+  document.querySelector('#reportsStatusFilter').addEventListener('change', (event) => {
+    adminState.reportsFilter.status = event.target.value;
+    renderReportsPanel();
+  });
+
+  document.querySelector('#reportsSearchFilter').addEventListener('input', (event) => {
+    adminState.reportsFilter.search = event.target.value.trim().toLowerCase();
+    renderReportsPanel();
+  });
+
+  document.querySelector('#reportsTableBody').addEventListener('click', (event) => {
+    if (event.target.dataset.action !== 'view-report') return;
+    adminState.selectedReportId = event.target.dataset.id;
+    renderReportDetails();
+  });
+
+  document.querySelector('#reportDetails').addEventListener('click', (event) => {
+    const reportId = event.target.dataset.id;
+    if (event.target.dataset.action === 'open-question-from-report') {
+      adminState.highlightedQuestionId = event.target.dataset.questionId;
+      setActivePanel('questions');
+      renderQuestionsList();
+      return;
+    }
+    if (!reportId) return;
+
+    const admin = getCurrentUser();
+    const note = document.querySelector('#reportAdminNote')?.value.trim() ?? '';
+    updateReport(reportId, { adminNote: note });
+
+    if (event.target.dataset.action === 'report-resolve') {
+      setReportStatus(reportId, 'resolved', note, { username: admin?.username ?? 'admin', role: 'admin' });
+    }
+    if (event.target.dataset.action === 'report-ignore') {
+      setReportStatus(reportId, 'ignored', note, { username: admin?.username ?? 'admin', role: 'admin' });
+    }
+    if (event.target.dataset.action === 'report-reopen') {
+      setReportStatus(reportId, 'open', note, null);
+    }
+    renderReportsPanel();
+  });
+}
+
 function bindMenu() {
   document.querySelectorAll('[data-panel]').forEach((button) => {
     button.addEventListener('click', () => setActivePanel(button.dataset.panel));
@@ -1005,6 +1120,7 @@ async function init() {
   bindLessonsCrud();
   bindTopicsCrud();
   bindComments();
+  bindReports();
   bindUsers();
   bindNotebookPanel();
   bindMenu();

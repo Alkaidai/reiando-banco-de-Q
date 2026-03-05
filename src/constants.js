@@ -7,7 +7,7 @@ export const STORAGE_KEYS = {
   version: `${STORAGE_PREFIX}seedVersion`,
   attempts: 'bq_attempts',
   notebook: 'bq_notebook',
-  reports: 'bq_question_reports',
+  reports: 'bq_reports',
   users: 'bq_users',
   trainingPlans: 'bq_trainingPlans',
   lessons: 'bq_lessons',

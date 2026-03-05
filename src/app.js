@@ -2,7 +2,7 @@ import { COMMENT_STATUS, DIFFICULTIES, GRADES, SUBJECTS } from './constants.js';
 import {
   addAttempt,
   addComment,
-  addQuestionReport,
+  addReport,
   addTrainingPlan,
   authenticate,
   getAttempts,
@@ -351,16 +351,17 @@ function questionTabPanel(tab, question, answer, user, notebookItem) {
 
   if (tab === 'erro') {
     if (!user) return '<p class="muted">Faça login para notificar erro.</p>';
-    return `<label>Tipo</label>
+    return `<label>Tipo do problema</label>
       <select data-role="report-type">
         <option value="enunciado">Enunciado</option>
-        <option value="alternativa">Alternativa</option>
         <option value="gabarito">Gabarito</option>
+        <option value="alternativas">Alternativas</option>
+        <option value="explicacao">Explicação</option>
         <option value="outro">Outro</option>
       </select>
-      <label>Descrição</label>
+      <label>Descreva o problema</label>
       <textarea data-role="report-description" placeholder="Descreva o problema"></textarea>
-      <button class="btn-danger" data-action="report-error">Enviar notificação</button>
+      <button class="btn-danger" data-action="report-error">Enviar</button>
       <p class="muted" data-role="report-feedback"></p>`;
   }
 
@@ -637,13 +638,30 @@ function bindQuestionActions() {
     if (event.target.dataset.action === 'report-error') {
       if (!user) return;
       const type = card.querySelector('[data-role="report-type"]')?.value ?? 'outro';
-      const description = card.querySelector('[data-role="report-description"]')?.value.trim() ?? '';
-      if (!description) return;
-      addQuestionReport({ userId: user.username, questionId, type, description, createdAt: new Date().toISOString() });
+      const message = card.querySelector('[data-role="report-description"]')?.value.trim() ?? '';
+      if (!message) return;
+      const topics = getTopics();
+      const topicName = topics.find((t) => t.id === question.topicId)?.name ?? question.topicId;
+      addReport({
+        questionId,
+        questionMeta: {
+          grade: question.grade,
+          subject: question.subject,
+          topic: topicName,
+          difficulty: question.difficulty,
+          preview: question.statement.slice(0, 120)
+        },
+        type,
+        message,
+        createdAt: new Date().toISOString(),
+        createdBy: { username: user.username, role: user.role },
+        status: 'open'
+      });
       const feedback = card.querySelector('[data-role="report-feedback"]');
-      if (feedback) feedback.textContent = 'Notificação enviada com sucesso.';
+      if (feedback) feedback.textContent = '';
       const textarea = card.querySelector('[data-role="report-description"]');
       if (textarea) textarea.value = '';
+      showToast('Erro reportado. Obrigado!');
     }
   });
 }

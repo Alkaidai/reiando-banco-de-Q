@@ -393,25 +393,88 @@ export function upsertNotebookItem(userId, questionId, patch = {}) {
   return nextItem;
 }
 
-export function getQuestionReports() {
-  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.reports), []);
+export function ensureReportsInit() {
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.reports), null);
+  if (Array.isArray(stored)) return stored;
+  const legacy = parseJson(localStorage.getItem('bq_question_reports'), null);
+  if (Array.isArray(legacy)) {
+    localStorage.setItem(STORAGE_KEYS.reports, JSON.stringify(legacy));
+    return legacy;
+  }
+  localStorage.setItem(STORAGE_KEYS.reports, JSON.stringify([]));
+  return [];
+}
+
+export function getReports() {
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.reports), ensureReportsInit());
   return Array.isArray(stored) ? stored : [];
 }
 
-export function addQuestionReport(report) {
-  const all = getQuestionReports();
+export function addReport(report) {
+  const all = getReports();
   const normalized = {
-    id: report?.id ?? newId('rpt'),
-    userId: String(report?.userId ?? ''),
+    id: report?.id ?? newId('rep'),
     questionId: String(report?.questionId ?? ''),
-    type: String(report?.type ?? 'geral'),
-    description: String(report?.description ?? '').trim(),
-    createdAt: report?.createdAt ?? nowIso()
+    questionMeta: {
+      grade: String(report?.questionMeta?.grade ?? ''),
+      subject: String(report?.questionMeta?.subject ?? ''),
+      topic: String(report?.questionMeta?.topic ?? ''),
+      difficulty: String(report?.questionMeta?.difficulty ?? ''),
+      preview: String(report?.questionMeta?.preview ?? '').trim()
+    },
+    type: String(report?.type ?? 'outro'),
+    message: String(report?.message ?? '').trim(),
+    createdAt: report?.createdAt ?? nowIso(),
+    createdBy: {
+      username: String(report?.createdBy?.username ?? ''),
+      role: String(report?.createdBy?.role ?? 'student')
+    },
+    status: ['open', 'resolved', 'ignored'].includes(report?.status) ? report.status : 'open',
+    adminNote: String(report?.adminNote ?? '').trim(),
+    resolvedAt: report?.resolvedAt ?? null,
+    resolvedBy: report?.resolvedBy
+      ? {
+          username: String(report.resolvedBy.username ?? ''),
+          role: String(report.resolvedBy.role ?? 'admin')
+        }
+      : null
   };
-  all.push(normalized);
+
+  all.unshift(normalized);
   localStorage.setItem(STORAGE_KEYS.reports, JSON.stringify(all));
   return normalized;
 }
+
+export function updateReport(reportId, patch = {}) {
+  const all = getReports();
+  const index = all.findIndex((report) => report.id === reportId);
+  if (index < 0) return null;
+  const merged = { ...all[index], ...patch };
+  all[index] = merged;
+  localStorage.setItem(STORAGE_KEYS.reports, JSON.stringify(all));
+  return merged;
+}
+
+export function setReportStatus(reportId, status, adminNote = '', resolvedBy = null) {
+  const patch = {
+    status,
+    adminNote: String(adminNote ?? '').trim()
+  };
+  if (status === 'resolved' || status === 'ignored') {
+    patch.resolvedAt = nowIso();
+    patch.resolvedBy = resolvedBy;
+  }
+  if (status === 'open') {
+    patch.resolvedAt = null;
+    patch.resolvedBy = null;
+  }
+  return updateReport(reportId, patch);
+}
+
+export function deleteReport(reportId) {
+  localStorage.setItem(STORAGE_KEYS.reports, JSON.stringify(getReports().filter((item) => item.id !== reportId)));
+}
+
 
 export function getTrainingPlans(userId) {
   const map = parseJson(localStorage.getItem(STORAGE_KEYS.trainingPlans), {});

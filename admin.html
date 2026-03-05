@@ -38,6 +38,7 @@
           <button data-panel="comments">Comentários</button>
           <button data-panel="lessons">Aulas</button>
           <button data-panel="topics">Tópicos</button>
+          <button data-panel="reports">Erros reportados</button>
         </nav>
 
         <section id="dashboard" class="panel card">
@@ -222,6 +223,31 @@ Qual é o resultado de 3/4 + 1/4?" required></textarea>
           <div class="comments-admin-grid">
             <div id="commentList" class="comment-list admin"></div>
             <div id="threadDetails" class="thread-details"></div>
+          </div>
+        </section>
+
+        <section id="reports" class="panel card hidden">
+          <h2>Erros reportados</h2>
+          <div class="actions-row">
+            <select id="reportsStatusFilter">
+              <option value="all">Todos</option>
+              <option value="open">Em aberto</option>
+              <option value="resolved">Resolvidos</option>
+              <option value="ignored">Ignorados</option>
+            </select>
+            <input id="reportsSearchFilter" placeholder="Buscar" />
+          </div>
+
+          <div class="comments-admin-grid">
+            <div>
+              <table class="table">
+                <thead><tr><th>Data</th><th>Tipo</th><th>Status</th><th>Série/Disciplina/Tópico</th><th>Preview</th><th>Autor</th><th>Ação</th></tr></thead>
+                <tbody id="reportsTableBody"></tbody>
+              </table>
+            </div>
+            <div id="reportDetails" class="thread-details">
+              <p class="muted">Selecione um report para triagem.</p>
+            </div>
           </div>
         </section>
       </section>
