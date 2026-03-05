@@ -7,6 +7,7 @@ import {
   getAttempts,
   getCurrentUser,
   getNotebook,
+  getTrainingPlanById,
   initStorageFromSeeds,
   loadQuestionBank,
   loadTopicsBank,
@@ -19,7 +20,11 @@ import { difficultyLabel, formatDate, optionLetter, safeText, subjectLabel } fro
 const state = {
   answers: {},
   activeQuestionTab: {},
-  filters: { grade: '', subject: '', difficulty: '', topicId: '', search: '' }
+  filters: { grade: '', subject: '', difficulty: '', topicId: '', search: '' },
+  training: {
+    plan: null,
+    questionIds: []
+  }
 };
 
 const QUESTION_TABS = {
@@ -43,8 +48,17 @@ function getTopicLabel(topics, topicId) {
 }
 
 function filteredQuestions() {
-  return loadQuestionBank().filter((q) => {
-    if (q.status !== 'published') return false;
+  let questions = loadQuestionBank().filter((q) => q.status !== 'draft');
+
+  if (state.training.plan) {
+    const onlyTraining = new Set(state.training.questionIds);
+    questions = questions.filter((q) => onlyTraining.has(q.id));
+    return state.training.questionIds
+      .map((id) => questions.find((q) => q.id === id))
+      .filter(Boolean);
+  }
+
+  return questions.filter((q) => {
     if (state.filters.grade && q.grade !== state.filters.grade) return false;
     if (state.filters.subject && q.subject !== state.filters.subject) return false;
     if (state.filters.difficulty && q.difficulty !== state.filters.difficulty) return false;
@@ -103,10 +117,33 @@ function renderAuthState() {
   document.querySelector('#headerLoginBtn').classList.toggle('hidden', loggedIn);
   document.querySelector('#logoutBtn').classList.toggle('hidden', !loggedIn);
 
-  const headerUserState = document.querySelector('#headerUserState');
-  headerUserState.textContent = user
+  document.querySelector('#headerUserState').textContent = user
     ? `Logado como ${user.username} (${user.role === 'admin' ? 'admin' : 'aluno'})`
     : 'Visitante';
+}
+
+function renderTrainingHeader() {
+  const el = document.querySelector('#trainingModeBanner');
+  if (!el) return;
+
+  if (!state.training.plan) {
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    return;
+  }
+
+  const total = state.training.questionIds.length;
+  const answered = state.training.questionIds.filter((qid) => state.answers[qid]).length;
+  const correct = state.training.questionIds.filter((qid) => state.answers[qid]?.isCorrect).length;
+  const errors = answered - correct;
+  const rate = answered ? Math.round((correct / answered) * 100) : 0;
+
+  const done = answered >= total && total > 0;
+
+  el.classList.remove('hidden');
+  el.innerHTML = done
+    ? `<strong>Treino concluído</strong> — Acertos: ${correct} | Erros: ${errors} | ${rate}%`
+    : `<strong>Modo Treino</strong> — Plano ${safeText(state.training.plan.id)} • ${answered}/${total} respondidas`;
 }
 
 function renderDashboard() {
@@ -157,9 +194,7 @@ function questionTabPanel(tab, question, answer, user, notebookItem) {
       <p>${safeText(question.explanation)}</p>`;
   }
 
-  if (tab === 'aulas') {
-    return '<p class="muted">Aulas deste tópico em breve.</p>';
-  }
+  if (tab === 'aulas') return '<p class="muted">Aulas deste tópico em breve.</p>';
 
   if (tab === 'comentarios') {
     if (!user) return '<p class="muted">Faça login para visualizar e enviar comentários.</p>';
@@ -280,6 +315,7 @@ function renderQuestions() {
     : '<p class="muted">Nenhuma questão encontrada com os filtros atuais.</p>';
 
   document.querySelector('#questionsList').innerHTML = html;
+  renderTrainingHeader();
 }
 
 function renderNotebook() {
@@ -383,9 +419,7 @@ function bindQuestionActions() {
         answeredAt: new Date().toISOString()
       });
 
-      if (!isCorrect) {
-        upsertNotebookItem(user.username, questionId, { status: 'pending' });
-      }
+      if (!isCorrect) upsertNotebookItem(user.username, questionId, { status: 'pending' });
 
       renderQuestions();
       renderDashboard();
@@ -444,13 +478,7 @@ function bindQuestionActions() {
       const type = card.querySelector('[data-role="report-type"]')?.value ?? 'outro';
       const description = card.querySelector('[data-role="report-description"]')?.value.trim() ?? '';
       if (!description) return;
-      addQuestionReport({
-        userId: user.username,
-        questionId,
-        type,
-        description,
-        createdAt: new Date().toISOString()
-      });
+      addQuestionReport({ userId: user.username, questionId, type, description, createdAt: new Date().toISOString() });
       const feedback = card.querySelector('[data-role="report-feedback"]');
       if (feedback) feedback.textContent = 'Notificação enviada com sucesso.';
       const textarea = card.querySelector('[data-role="report-description"]');
@@ -487,17 +515,13 @@ function bindNotebookActions() {
       return;
     }
 
-    if (event.target.dataset.action === 'refazer') {
-      scrollToQuestion(questionId);
-    }
+    if (event.target.dataset.action === 'refazer') scrollToQuestion(questionId);
   });
 }
 
 function bindDashboardActions() {
   document.querySelector('#reviewNow').addEventListener('click', (event) => {
-    if (event.target.dataset.action === 'refazer') {
-      scrollToQuestion(event.target.dataset.questionId);
-    }
+    if (event.target.dataset.action === 'refazer') scrollToQuestion(event.target.dataset.questionId);
   });
 }
 
@@ -543,8 +567,22 @@ function populateSelects() {
   document.querySelector('#filterDifficulty').innerHTML = '<option value="">Todas as dificuldades</option>' + DIFFICULTIES.map((d) => `<option value="${d.value}">${d.label}</option>`).join('');
 }
 
+function initTrainingModeFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const trainingPlanId = params.get('trainingPlanId');
+  if (!trainingPlanId) return;
+
+  const plan = getTrainingPlanById(trainingPlanId);
+  if (!plan) return;
+
+  state.training.plan = plan;
+  state.training.questionIds = plan.questionIds;
+  document.querySelector('#trainingModeBanner')?.classList.remove('hidden');
+}
+
 async function init() {
   await initStorageFromSeeds();
+  initTrainingModeFromUrl();
   populateSelects();
   hydrateSelects();
   bindTabs();

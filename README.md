@@ -11,6 +11,8 @@ Projeto estático para GitHub Pages com duas áreas:
 ## Estrutura
 
 ```txt
+/assets
+  /images
 /data
   questions.seed.json
   topics.seed.json
@@ -53,6 +55,9 @@ admin.html
 - `qb_seedVersion`
 - `bq_attempts`
 - `bq_notebook`
+- `bq_trainingPlans`
+- `bq_users`
+- `bq_admin_selectedStudentId`
 
 ## Funcionalidades
 
@@ -90,3 +95,7 @@ python3 -m http.server 4173
 Abra:
 - `http://localhost:4173/index.html`
 - `http://localhost:4173/admin.html`
+
+
+## Logo
+Coloque a logo em `assets/images/logo-cade-o-xis.png` para aparecer no topo do aluno e admin.

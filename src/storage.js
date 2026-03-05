@@ -1,4 +1,4 @@
-import { COMMENT_STATUS, SEED_VERSION, STORAGE_KEYS, USERS } from './constants.js';
+import { COMMENT_STATUS, GRADES, SEED_VERSION, STORAGE_KEYS, USERS } from './constants.js';
 
 let inMemoryQuestions = [];
 let inMemoryTopics = [];
@@ -92,7 +92,43 @@ function normalizeNotebookItem(item) {
   };
 }
 
+function normalizeUser(user) {
+  return {
+    id: String(user?.id ?? newId('usr')),
+    username: String(user?.username ?? '').trim(),
+    password: String(user?.password ?? ''),
+    role: user?.role === 'admin' ? 'admin' : 'student',
+    status: user?.status === 'blocked' ? 'blocked' : 'active',
+    gradeLevel: GRADES.includes(user?.gradeLevel) ? user.gradeLevel : null,
+    createdAt: user?.createdAt ?? nowIso(),
+    lastLoginAt: user?.lastLoginAt ?? null
+  };
+}
+
+function normalizeTrainingPlan(plan) {
+  return {
+    id: String(plan?.id ?? newId('tp')),
+    createdAt: plan?.createdAt ?? nowIso(),
+    topic: String(plan?.topic ?? ''),
+    qty: Number(plan?.qty ?? 0),
+    distribution: {
+      easy: Number(plan?.distribution?.easy ?? 0),
+      medium: Number(plan?.distribution?.medium ?? 0),
+      hard: Number(plan?.distribution?.hard ?? 0)
+    },
+    questionIds: Array.isArray(plan?.questionIds) ? plan.questionIds.map(String) : []
+  };
+}
+
+function ensureUsersSeeded() {
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.users), null);
+  if (Array.isArray(stored) && stored.length) return;
+  localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(USERS.map(normalizeUser)));
+}
+
 export async function initStorageFromSeeds() {
+  ensureUsersSeeded();
+
   const shouldReset = localStorage.getItem(STORAGE_KEYS.version) !== SEED_VERSION;
   const hasBank = !!localStorage.getItem(STORAGE_KEYS.questionBank);
   const hasTopics = !!localStorage.getItem(STORAGE_KEYS.topicsBank);
@@ -144,6 +180,38 @@ export function loadTopicsBank() {
 export function saveTopicsBank(topics) {
   inMemoryTopics = Array.isArray(topics) ? topics : [];
   localStorage.setItem(STORAGE_KEYS.topicsBank, JSON.stringify(inMemoryTopics));
+}
+
+export function loadUsers() {
+  ensureUsersSeeded();
+  const stored = parseJson(localStorage.getItem(STORAGE_KEYS.users), []);
+  return Array.isArray(stored) ? stored.map(normalizeUser).filter((u) => u.username) : [];
+}
+
+export function saveUsers(users) {
+  const normalized = Array.isArray(users) ? users.map(normalizeUser).filter((u) => u.username) : [];
+  localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(normalized));
+  return normalized;
+}
+
+export function upsertUser(userPatch) {
+  const all = loadUsers();
+  const index = all.findIndex((u) => u.id === userPatch?.id || u.username === userPatch?.username);
+  const merged = normalizeUser({ ...(index >= 0 ? all[index] : {}), ...userPatch });
+
+  if (index >= 0) all[index] = merged;
+  else all.push(merged);
+
+  saveUsers(all);
+  return merged;
+}
+
+export function getUsersByRole(role) {
+  return loadUsers().filter((u) => u.role === role);
+}
+
+export function getUserById(idOrUsername) {
+  return loadUsers().find((u) => u.id === idOrUsername || u.username === idOrUsername) ?? null;
 }
 
 export function getQuestionById(id) {
@@ -222,17 +290,12 @@ export function upsertNotebookItem(userId, questionId, patch = {}) {
     updatedAt: nowIso()
   });
 
-  if (index >= 0) {
-    all[index] = nextItem;
-  } else {
-    all.push(nextItem);
-  }
+  if (index >= 0) all[index] = nextItem;
+  else all.push(nextItem);
 
   localStorage.setItem(STORAGE_KEYS.notebook, JSON.stringify(all));
   return nextItem;
 }
-
-
 
 export function getQuestionReports() {
   const stored = parseJson(localStorage.getItem(STORAGE_KEYS.reports), []);
@@ -254,10 +317,50 @@ export function addQuestionReport(report) {
   return normalized;
 }
 
+export function getTrainingPlans(userId) {
+  const map = parseJson(localStorage.getItem(STORAGE_KEYS.trainingPlans), {});
+  const plans = Array.isArray(map?.[userId]) ? map[userId] : [];
+  return plans.map(normalizeTrainingPlan);
+}
+
+export function addTrainingPlan(userId, plan) {
+  const map = parseJson(localStorage.getItem(STORAGE_KEYS.trainingPlans), {});
+  const current = Array.isArray(map[userId]) ? map[userId] : [];
+  const normalized = normalizeTrainingPlan(plan);
+  map[userId] = [normalized, ...current];
+  localStorage.setItem(STORAGE_KEYS.trainingPlans, JSON.stringify(map));
+  return normalized;
+}
+
+export function getTrainingPlanById(planId) {
+  const map = parseJson(localStorage.getItem(STORAGE_KEYS.trainingPlans), {});
+  for (const [userId, plans] of Object.entries(map)) {
+    const found = (Array.isArray(plans) ? plans : []).find((p) => p.id === planId);
+    if (found) return { userId, ...normalizeTrainingPlan(found) };
+  }
+  return null;
+}
+
+export function getAdminSelectedStudentId() {
+  return localStorage.getItem(STORAGE_KEYS.adminSelectedStudentId) || null;
+}
+
+export function setAdminSelectedStudentId(studentId) {
+  if (!studentId) {
+    localStorage.removeItem(STORAGE_KEYS.adminSelectedStudentId);
+    return;
+  }
+  localStorage.setItem(STORAGE_KEYS.adminSelectedStudentId, studentId);
+}
+
 export function authenticate(username, password) {
-  const found = USERS.find((user) => user.username === username && user.password === password);
-  if (!found) return null;
-  return { username: found.username, role: found.role };
+  const users = loadUsers();
+  const found = users.find((user) => user.username === username && user.password === password);
+  if (!found || found.status === 'blocked') return null;
+
+  found.lastLoginAt = nowIso();
+  saveUsers(users);
+  return { id: found.id, username: found.username, role: found.role, gradeLevel: found.gradeLevel };
 }
 
 export function getCurrentUser() {

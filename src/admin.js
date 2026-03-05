@@ -1,28 +1,37 @@
-import { COMMENT_STATUS, DIFFICULTIES, GRADES, SUBJECTS, USERS } from './constants.js';
+import { COMMENT_STATUS, DIFFICULTIES, GRADES, SUBJECTS } from './constants.js';
 import {
   addReply,
+  addTrainingPlan,
   authenticate,
+  getAdminSelectedStudentId,
   getAttempts,
   getCurrentUser,
   getNotebook,
+  getTrainingPlans,
+  getUsersByRole,
   initStorageFromSeeds,
   loadQuestionBank,
   loadTopicsBank,
+  loadUsers,
   logout,
   resetToSeed,
   saveQuestionBank,
+  setAdminSelectedStudentId,
   setCommentStatus,
-  setCurrentUser
+  setCurrentUser,
+  upsertUser
 } from './storage.js';
 import { difficultyLabel, formatDate, safeText, subjectLabel, uid } from './ui.js';
 
 const adminState = {
   editingId: null,
+  editingUserId: null,
   selectedThread: null,
   selectedUserId: null,
   activePanel: 'dashboard',
   notebookFilter: { status: 'all', search: '' },
-  highlightedQuestionId: null
+  highlightedQuestionId: null,
+  dashGradeFilter: 'all'
 };
 
 function ensureAdmin() {
@@ -104,7 +113,7 @@ function getFormData() {
   };
 }
 
-function fillForm(question) {
+function fillQuestionForm(question) {
   adminState.editingId = question.id;
   document.querySelector('#qGrade').value = question.grade;
   document.querySelector('#qSubject').value = question.subject;
@@ -118,7 +127,7 @@ function fillForm(question) {
   document.querySelector('#formTitle').textContent = 'Editar questão';
 }
 
-function resetForm() {
+function resetQuestionForm() {
   adminState.editingId = null;
   document.querySelector('#questionForm').reset();
   document.querySelector('#qCorrectIndex').value = '0';
@@ -126,19 +135,8 @@ function resetForm() {
   document.querySelector('#formTitle').textContent = 'Nova questão';
 }
 
-function collectUsers() {
-  const users = new Set(USERS.map((u) => u.username));
-  getAttempts().forEach((a) => a.userId && users.add(a.userId));
-  getNotebook().forEach((n) => n.userId && users.add(n.userId));
-
-  loadQuestionBank().forEach((q) => {
-    (q.comments ?? []).forEach((c) => {
-      if (c.author?.username) users.add(c.author.username);
-      (c.replies ?? []).forEach((r) => r.author?.username && users.add(r.author.username));
-    });
-  });
-
-  return [...users].sort();
+function collectStudents() {
+  return getUsersByRole('student').sort((a, b) => a.username.localeCompare(b.username));
 }
 
 function buildStatsForAttempts(attempts, questionsMap, topicsMap) {
@@ -160,7 +158,7 @@ function buildStatsForAttempts(attempts, questionsMap, topicsMap) {
     .filter((x) => x.total > 0)
     .map((x) => ({ ...x, errorRate: Math.round((x.errors / x.total) * 100) }))
     .sort((a, b) => b.errorRate - a.errorRate || b.errors - a.errors)
-    .slice(0, 5);
+    .slice(0, 10);
 
   return { answered, correct, rate, weakTopics };
 }
@@ -168,7 +166,8 @@ function buildStatsForAttempts(attempts, questionsMap, topicsMap) {
 function renderDashboard() {
   const questions = loadQuestionBank();
   const attempts = getAttempts();
-  const users = collectUsers();
+  const users = loadUsers();
+  const students = users.filter((u) => u.role === 'student');
   const topicsMap = new Map(loadTopicsBank().map((t) => [t.id, t.label]));
   const questionsMap = new Map(questions.map((q) => [q.id, q]));
 
@@ -211,12 +210,17 @@ function renderDashboard() {
   renderCountList('#dashBySubject', countBy(questions, (q) => q.subject), subjectLabel);
   renderCountList('#dashByDifficulty', countBy(questions, (q) => q.difficulty), difficultyLabel);
 
-  const globalWeakTopics = buildStatsForAttempts(attempts, questionsMap, topicsMap).weakTopics;
+  const attemptsForTopic = adminState.dashGradeFilter === 'all'
+    ? attempts
+    : attempts.filter((a) => questionsMap.get(a.questionId)?.grade === adminState.dashGradeFilter);
+
+  const globalWeakTopics = buildStatsForAttempts(attemptsForTopic, questionsMap, topicsMap).weakTopics;
   document.querySelector('#dashWorstTopics').innerHTML = globalWeakTopics.length
     ? globalWeakTopics
+        .slice(0, 10)
         .map((t) => `<li>${safeText(t.label)} — erro ${t.errorRate}% (${t.errors}/${t.total})</li>`)
         .join('')
-    : '<li class="muted">Sem dados.</li>';
+    : '<li class="muted">Sem dados suficientes ainda.</li>';
 
   const qAgg = new Map();
   attempts.forEach((a) => {
@@ -244,19 +248,53 @@ function renderDashboard() {
         })
         .join('')
     : '<p class="muted">Sem dados.</p>';
+
+  const worstUsers = students
+    .map((student) => {
+      const at = getAttempts(student.username);
+      const ans = at.length;
+      const cor = at.filter((x) => x.isCorrect).length;
+      const rate = ans ? Math.round((cor / ans) * 100) : 0;
+      return { student, answered: ans, correct: cor, rate };
+    })
+    .filter((r) => r.answered >= 5)
+    .sort((a, b) => a.rate - b.rate)
+    .slice(0, 10);
+
+  document.querySelector('#dashWorstUsers').innerHTML = worstUsers.length
+    ? `<table class="table"><thead><tr><th>username</th><th>turma</th><th>respondidas</th><th>acertos</th><th>aproveitamento</th></tr></thead><tbody>
+      ${worstUsers
+        .map(
+          (r) => `<tr><td>${safeText(r.student.username)}</td><td>${r.student.gradeLevel ?? '—'}</td><td>${r.answered}</td><td>${r.correct}</td><td>${r.rate}%</td></tr>`
+        )
+        .join('')}
+      </tbody></table>`
+    : '<p class="muted">Sem dados suficientes ainda.</p>';
 }
 
 function renderUsersPanel() {
-  const users = collectUsers();
-  if (!adminState.selectedUserId && users.length) {
-    adminState.selectedUserId = users[0];
+  const users = loadUsers().sort((a, b) => a.username.localeCompare(b.username));
+  const students = users.filter((u) => u.role === 'student');
+
+  if (!adminState.selectedUserId && students.length) {
+    adminState.selectedUserId = students[0].username;
   }
 
   document.querySelector('#usersList').innerHTML = users.length
     ? users
-        .map((userId) => `<button class="thread-item ${adminState.selectedUserId === userId ? 'active-user' : ''}" data-action="select-user" data-user-id="${userId}">${safeText(userId)}</button>`)
+        .map(
+          (user) => `<button class="thread-item ${adminState.selectedUserId === user.username ? 'active-user' : ''}" data-action="select-user" data-user-id="${user.username}">
+            <strong>${safeText(user.username)}</strong>
+            <span>${user.role} • ${user.status} • ${user.gradeLevel ?? 'sem turma'}</span>
+            <span>Último login: ${user.lastLoginAt ? formatDate(user.lastLoginAt) : 'nunca'}</span>
+          </button>`
+        )
         .join('')
     : '<p class="muted">Nenhum usuário encontrado.</p>';
+
+  const notebookStudentSelect = document.querySelector('#notebookStudentSelect');
+  notebookStudentSelect.innerHTML = '<option value="">Selecione aluno</option>' + students.map((s) => `<option value="${s.username}">${safeText(s.username)} (${s.gradeLevel ?? 'sem turma'})</option>`).join('');
+  notebookStudentSelect.value = adminState.selectedUserId ?? '';
 
   const container = document.querySelector('#userInspectionDetails');
   if (!adminState.selectedUserId) {
@@ -264,20 +302,29 @@ function renderUsersPanel() {
     return;
   }
 
+  const selected = users.find((u) => u.username === adminState.selectedUserId);
+  if (!selected) {
+    container.innerHTML = '<p class="muted">Usuário não encontrado.</p>';
+    return;
+  }
+
   const questions = loadQuestionBank();
   const questionsMap = new Map(questions.map((q) => [q.id, q]));
   const topicsMap = new Map(loadTopicsBank().map((t) => [t.id, t.label]));
-  const attempts = getAttempts(adminState.selectedUserId)
-    .sort((a, b) => new Date(b.answeredAt).getTime() - new Date(a.answeredAt).getTime());
+  const attempts = getAttempts(adminState.selectedUserId).sort((a, b) => new Date(b.answeredAt).getTime() - new Date(a.answeredAt).getTime());
   const stats = buildStatsForAttempts(attempts, questionsMap, topicsMap);
+  const topics = loadTopicsBank();
+
+  const trainingHistory = getTrainingPlans(selected.username).slice(0, 5);
 
   container.innerHTML = `
-    <h3>Inspeção: ${safeText(adminState.selectedUserId)}</h3>
+    <h3>Inspeção: ${safeText(selected.username)}</h3>
+    <p><strong>Turma:</strong> ${selected.gradeLevel ?? 'sem turma'} • <strong>Status:</strong> ${selected.status}</p>
     <p><strong>Respondidas:</strong> ${stats.answered} | <strong>Acertos:</strong> ${stats.correct} | <strong>Aproveitamento:</strong> ${stats.rate}%</p>
     <h4>Tópicos mais fracos</h4>
     <ul>
       ${stats.weakTopics.length
-        ? stats.weakTopics.map((t) => `<li>${safeText(t.label)} — erro ${t.errorRate}% (${t.errors}/${t.total})</li>`).join('')
+        ? stats.weakTopics.slice(0, 5).map((t) => `<li>${safeText(t.label)} — erro ${t.errorRate}% (${t.errors}/${t.total})</li>`).join('')
         : '<li class="muted">Sem dados.</li>'}
     </ul>
     <h4>Tentativas recentes (20)</h4>
@@ -291,7 +338,75 @@ function renderUsersPanel() {
       }).join('') || '<p class="muted">Sem tentativas.</p>'}
     </div>
     <button class="btn-secondary" data-action="go-notebook">Ver caderno</button>
+
+    <hr />
+    <h4>GERAR TREINO</h4>
+    <div class="question-form">
+      <select id="trainingTopic">
+        ${topics.map((t) => `<option value="${t.id}">${safeText(t.label)}</option>`).join('')}
+      </select>
+      <select id="trainingQty">
+        <option value="10">10</option><option value="15">15</option><option value="20">20</option>
+      </select>
+      <div class="actions-row">
+        <input id="trainingEasy" type="number" min="0" value="3" placeholder="Fáceis" />
+        <input id="trainingMedium" type="number" min="0" value="5" placeholder="Médias" />
+        <input id="trainingHard" type="number" min="0" value="2" placeholder="Difíceis" />
+      </div>
+      <button class="btn-primary" data-action="generate-training" data-user-id="${safeText(selected.username)}">Gerar treino</button>
+      <p id="trainingFeedback" class="muted"></p>
+    </div>
+
+    <h4>Treinos recentes</h4>
+    <div>
+      ${trainingHistory.length ? trainingHistory.map((plan) => `<div class="review-item"><p><strong>${safeText(plan.topic)}</strong> (${plan.qty} questões)</p><small>${formatDate(plan.createdAt)} • ID: ${plan.id}</small></div>`).join('') : '<p class="muted">Sem treinos gerados.</p>'}
+    </div>
   `;
+}
+
+function pickQuestionsForTraining({ userId, topic, qty, distribution }) {
+  const user = loadUsers().find((u) => u.username === userId);
+  const questions = loadQuestionBank();
+  const recentQuestionIds = new Set(getAttempts(userId).sort((a, b) => new Date(b.answeredAt) - new Date(a.answeredAt)).slice(0, 30).map((a) => a.questionId));
+
+  const byDiff = {
+    easy: questions.filter((q) => q.topicId === topic && q.difficulty === 'easy' && q.status !== 'draft'),
+    medium: questions.filter((q) => q.topicId === topic && q.difficulty === 'medium' && q.status !== 'draft'),
+    hard: questions.filter((q) => q.topicId === topic && q.difficulty === 'hard' && q.status !== 'draft')
+  };
+
+  if (user?.gradeLevel) {
+    Object.keys(byDiff).forEach((k) => {
+      byDiff[k] = byDiff[k].filter((q) => q.grade === user.gradeLevel);
+    });
+  }
+
+  const chosen = [];
+  for (const diff of ['easy', 'medium', 'hard']) {
+    const need = distribution[diff];
+    if (!need) continue;
+
+    const preferred = byDiff[diff].filter((q) => !recentQuestionIds.has(q.id));
+    const fallback = byDiff[diff];
+    const pool = [...preferred, ...fallback.filter((q) => preferred.every((p) => p.id !== q.id))];
+
+    for (const q of pool) {
+      if (chosen.length >= qty || chosen.filter((x) => x.id === q.id).length) continue;
+      chosen.push(q);
+      if (chosen.filter((x) => x.difficulty === diff).length >= need) break;
+    }
+  }
+
+  if (chosen.length < qty) {
+    const extraPool = questions.filter((q) => q.topicId === topic && q.status !== 'draft' && (!user?.gradeLevel || q.grade === user.gradeLevel));
+    for (const q of extraPool) {
+      if (chosen.length >= qty) break;
+      if (chosen.some((x) => x.id === q.id)) continue;
+      chosen.push(q);
+    }
+  }
+
+  return chosen.slice(0, qty).map((q) => q.id);
 }
 
 function renderNotebookPanel() {
@@ -300,6 +415,8 @@ function renderNotebookPanel() {
     container.innerHTML = '<p class="muted">Selecione um usuário em Usuários.</p>';
     return;
   }
+
+  setAdminSelectedStudentId(adminState.selectedUserId);
 
   const statusFilter = adminState.notebookFilter.status;
   const search = adminState.notebookFilter.search.toLowerCase();
@@ -452,7 +569,7 @@ function bindQuestionCrud() {
     }
     saveQuestionBank(bank);
     feedback.textContent = 'Questão salva com sucesso.';
-    resetForm();
+    resetQuestionForm();
     refreshAdminViews();
   });
 
@@ -468,31 +585,18 @@ function bindQuestionCrud() {
 
     if (event.target.dataset.action === 'edit') {
       const target = bank.find((item) => item.id === id);
-      if (target) fillForm(target);
+      if (target) fillQuestionForm(target);
     }
   });
 
-  document.querySelector('#newQuestionBtn').addEventListener('click', () => resetForm());
+  document.querySelector('#newQuestionBtn').addEventListener('click', () => resetQuestionForm());
 
   document.querySelector('#resetSeedBtn').addEventListener('click', async () => {
     await resetToSeed();
     populateFormSelects();
-    resetForm();
+    resetQuestionForm();
     adminState.highlightedQuestionId = null;
     refreshAdminViews();
-  });
-}
-
-function bindComments() {
-  document.querySelector('#commentFilter').addEventListener('change', renderCommentsPanel);
-  document.querySelector('#commentList').addEventListener('click', (event) => {
-    const button = event.target.closest('.thread-item');
-    if (!button) return;
-    adminState.selectedThread = {
-      questionId: button.dataset.questionId,
-      commentId: button.dataset.commentId
-    };
-    renderSelectedThread();
   });
 }
 
@@ -501,6 +605,18 @@ function bindUsers() {
     const btn = event.target.closest('[data-action="select-user"]');
     if (!btn) return;
     adminState.selectedUserId = btn.dataset.userId;
+    setAdminSelectedStudentId(adminState.selectedUserId);
+
+    const selected = loadUsers().find((u) => u.username === adminState.selectedUserId);
+    adminState.editingUserId = selected?.id ?? null;
+    if (selected) {
+      document.querySelector('#uUsername').value = selected.username;
+      document.querySelector('#uPassword').value = selected.password;
+      document.querySelector('#uRole').value = selected.role;
+      document.querySelector('#uStatus').value = selected.status;
+      document.querySelector('#uGradeLevel').value = selected.gradeLevel ?? '';
+    }
+
     renderUsersPanel();
     renderNotebookPanel();
   });
@@ -510,10 +626,85 @@ function bindUsers() {
       setActivePanel('notebook');
       renderNotebookPanel();
     }
+
+    if (event.target.dataset.action === 'generate-training') {
+      const userId = event.target.dataset.userId;
+      const topic = document.querySelector('#trainingTopic').value;
+      const qty = Number(document.querySelector('#trainingQty').value);
+      const distribution = {
+        easy: Number(document.querySelector('#trainingEasy').value || 0),
+        medium: Number(document.querySelector('#trainingMedium').value || 0),
+        hard: Number(document.querySelector('#trainingHard').value || 0)
+      };
+
+      const sum = distribution.easy + distribution.medium + distribution.hard;
+      const feedback = document.querySelector('#trainingFeedback');
+      if (sum !== qty) {
+        feedback.textContent = 'A soma de fáceis/médias/difíceis deve ser igual à quantidade.';
+        return;
+      }
+
+      const questionIds = pickQuestionsForTraining({ userId, topic, qty, distribution });
+      if (!questionIds.length) {
+        feedback.textContent = 'Não foi possível montar treino com os filtros informados.';
+        return;
+      }
+
+      const created = addTrainingPlan(userId, {
+        id: uid('tp'),
+        createdAt: new Date().toISOString(),
+        topic,
+        qty,
+        distribution,
+        questionIds
+      });
+
+      feedback.innerHTML = `Treino criado com sucesso.<br/>${safeText(topic)} (${qty} questões) • F:${distribution.easy} M:${distribution.medium} D:${distribution.hard}<br/><a href="./index.html?trainingPlanId=${created.id}" target="_blank">Abrir treino como aluno</a>`;
+      renderUsersPanel();
+    }
+  });
+
+  document.querySelector('#userForm').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const username = document.querySelector('#uUsername').value.trim();
+    const password = document.querySelector('#uPassword').value.trim();
+    const role = document.querySelector('#uRole').value;
+    const status = document.querySelector('#uStatus').value;
+    const gradeLevel = document.querySelector('#uGradeLevel').value || null;
+    const feedback = document.querySelector('#userFormFeedback');
+
+    if (!username || !password) {
+      feedback.textContent = 'Usuário e senha são obrigatórios.';
+      return;
+    }
+
+    const saved = upsertUser({
+      id: adminState.editingUserId,
+      username,
+      password,
+      role,
+      status,
+      gradeLevel
+    });
+
+    adminState.editingUserId = saved.id;
+    adminState.selectedUserId = saved.username;
+    setAdminSelectedStudentId(saved.username);
+    feedback.textContent = 'Usuário salvo com sucesso.';
+    renderUsersPanel();
+    renderNotebookPanel();
+    renderDashboard();
   });
 }
 
 function bindNotebookPanel() {
+  document.querySelector('#notebookStudentSelect').addEventListener('change', (event) => {
+    adminState.selectedUserId = event.target.value || null;
+    setAdminSelectedStudentId(adminState.selectedUserId);
+    renderUsersPanel();
+    renderNotebookPanel();
+  });
+
   document.querySelector('#notebookStatusFilter').addEventListener('change', (event) => {
     adminState.notebookFilter.status = event.target.value;
     renderNotebookPanel();
@@ -533,9 +724,27 @@ function bindNotebookPanel() {
   });
 }
 
+function bindComments() {
+  document.querySelector('#commentFilter').addEventListener('change', renderCommentsPanel);
+  document.querySelector('#commentList').addEventListener('click', (event) => {
+    const button = event.target.closest('.thread-item');
+    if (!button) return;
+    adminState.selectedThread = {
+      questionId: button.dataset.questionId,
+      commentId: button.dataset.commentId
+    };
+    renderSelectedThread();
+  });
+}
+
 function bindMenu() {
   document.querySelectorAll('[data-panel]').forEach((button) => {
     button.addEventListener('click', () => setActivePanel(button.dataset.panel));
+  });
+
+  document.querySelector('#dashGradeFilter').addEventListener('change', (event) => {
+    adminState.dashGradeFilter = event.target.value;
+    renderDashboard();
   });
 }
 
@@ -574,8 +783,10 @@ async function init() {
   if (!getCurrentUser()) return;
   if (!ensureAdmin()) return;
 
+  adminState.selectedUserId = getAdminSelectedStudentId();
+
   populateFormSelects();
-  resetForm();
+  resetQuestionForm();
 
   bindQuestionCrud();
   bindComments();

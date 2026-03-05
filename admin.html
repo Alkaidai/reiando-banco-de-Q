@@ -8,7 +8,9 @@
   </head>
   <body>
     <header class="topbar">
-      <h1 class="brand-logo" aria-label="Logo">X</h1>
+      <h1 class="brand-logo" aria-label="Logo">
+        <img src="./assets/images/logo-cade-o-xis.png" alt="Cadê o Xis" />
+      </h1>
       <div class="top-actions">
         <a class="btn-secondary" href="./index.html">Área do Aluno</a>
         <span id="sessionInfo" class="session"></span>
@@ -39,6 +41,23 @@
         <section id="dashboard" class="panel card">
           <h2>Dashboard</h2>
           <div id="adminDashboardCards" class="admin-stats-grid"></div>
+          <article class="card">
+            <h3>Usuários com pior aproveitamento</h3>
+            <div id="dashWorstUsers"></div>
+          </article>
+          <article class="card">
+            <div class="actions-row">
+              <h3>Top 10 tópicos mais errados</h3>
+              <select id="dashGradeFilter">
+                <option value="all">Geral</option>
+                <option value="7EF">7EF</option>
+                <option value="8EF">8EF</option>
+                <option value="9EF">9EF</option>
+                <option value="1EM">1EM</option>
+              </select>
+            </div>
+            <ol id="dashWorstTopics"></ol>
+          </article>
           <div class="admin-dashboard-grid">
             <article class="card">
               <h3>Questões por série</h3>
@@ -51,10 +70,6 @@
             <article class="card">
               <h3>Questões por dificuldade</h3>
               <ul id="dashByDifficulty"></ul>
-            </article>
-            <article class="card">
-              <h3>Top 5 tópicos mais errados</h3>
-              <ol id="dashWorstTopics"></ol>
             </article>
           </div>
           <article class="card">
@@ -97,6 +112,22 @@
           <h2>Usuários / Inspeção</h2>
           <div class="admin-users-grid">
             <div>
+              <h3>Cadastro / edição</h3>
+              <form id="userForm" class="question-form">
+                <input id="uUsername" placeholder="Username" required />
+                <input id="uPassword" placeholder="Senha" required />
+                <select id="uRole"><option value="student">student</option><option value="admin">admin</option></select>
+                <select id="uStatus"><option value="active">active</option><option value="blocked">blocked</option></select>
+                <select id="uGradeLevel">
+                  <option value="">Nenhuma</option>
+                  <option value="7EF">7EF</option>
+                  <option value="8EF">8EF</option>
+                  <option value="9EF">9EF</option>
+                  <option value="1EM">1EM</option>
+                </select>
+                <button class="btn-primary" type="submit">Salvar usuário</button>
+                <p id="userFormFeedback" class="error-text"></p>
+              </form>
               <h3>Lista de usuários</h3>
               <div id="usersList"></div>
             </div>
@@ -109,10 +140,11 @@
         <section id="notebook" class="panel card hidden">
           <h2>Caderno (inspeção)</h2>
           <div class="actions-row">
+            <select id="notebookStudentSelect"></select>
             <select id="notebookStatusFilter">
               <option value="all">Todos</option>
-              <option value="pending">Pendente</option>
-              <option value="mastered">Dominado</option>
+              <option value="pending">Pendentes</option>
+              <option value="mastered">Dominados</option>
             </select>
             <input id="notebookSearchFilter" placeholder="Buscar texto" />
           </div>
