@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Banco de Questões - Aluno</title>
+    <link rel="stylesheet" href="./styles/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1 class="brand-logo" aria-label="Logo">
+        <img src="./assets/images/logo-cade-o-xis.png" alt="Cadê o Xis" />
+      </h1>
+      <div class="top-actions">
+        <a id="adminLink" class="btn-secondary hidden" href="./admin.html">Admin</a>
+        <a class="btn-primary" href="./admin.html">Ir para painel do administrador</a>
+        <span id="headerUserState" class="session">Visitante</span>
+        <button id="headerLoginBtn" class="btn-secondary">Login</button>
+        <button id="logoutBtn" class="btn-danger hidden">Sair</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section id="loginView" class="auth-card">
+        <h2>Login</h2>
+        <form id="loginForm">
+          <input id="username" placeholder="Usuário" required />
+          <input id="password" type="password" placeholder="Senha" required />
+          <button class="btn-primary" type="submit">Entrar</button>
+        </form>
+        <p id="loginFeedback" class="error-text"></p>
+      </section>
+
+      <section id="appView" class="hidden">
+        <div id="trainingModeBanner" class="card hidden"></div>
+        <nav class="menu student-menu">
+          <button data-tab="panel-dashboard" class="active">Dashboard</button>
+          <button data-tab="panel-questions">Questões</button>
+          <button data-tab="panel-notebook">Caderno de erros</button>
+        </nav>
+
+        <section id="panel-dashboard" class="student-panel">
+          <section class="stats-grid">
+            <article class="stat-card"><p>Respondidas</p><strong id="statAnswered">0</strong></article>
+            <article class="stat-card"><p>Acertos</p><strong id="statCorrect">0</strong></article>
+            <article class="stat-card"><p>Aproveitamento</p><strong id="statRate">0%</strong></article>
+          </section>
+
+          <section id="dashboardEmpty" class="card">
+            <p>Comece respondendo questões.</p>
+          </section>
+
+          <section id="dashboardData" class="hidden">
+            <article class="card">
+              <h3>Tópicos mais fracos</h3>
+              <ul id="weakTopics"></ul>
+            </article>
+
+            <article class="card">
+              <h3>Revisar agora (últimas 10 erradas)</h3>
+              <div id="reviewNow"></div>
+            </article>
+          </section>
+        </section>
+
+        <section id="panel-questions" class="student-panel hidden">
+          <section class="filters card">
+            <h3>Filtros</h3>
+            <div class="filter-grid">
+              <select id="filterGrade"></select>
+              <select id="filterSubject"></select>
+              <select id="filterDifficulty"></select>
+              <select id="filterTopicId"></select>
+              <input id="filterSearch" placeholder="Buscar" />
+            </div>
+          </section>
+
+          <section id="questionsList" class="questions-list"></section>
+        </section>
+
+        <section id="panel-notebook" class="student-panel hidden">
+          <article class="card">
+            <h3>Caderno de erros</h3>
+            <div id="notebookList"></div>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
