@@ -4,6 +4,8 @@ let inMemoryQuestions = [];
 let inMemoryTopics = [];
 let inMemoryLessons = [];
 
+const STUDENT_DASHBOARD_META_KEY = 'bq_student_dashboard_meta';
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -368,6 +370,91 @@ export function setCommentStatus(questionId, commentId, status) {
   return comment;
 }
 
+
+function getStudentDashboardMetaMap() {
+  const raw = parseJson(localStorage.getItem(STUDENT_DASHBOARD_META_KEY), {});
+  return raw && typeof raw === 'object' ? raw : {};
+}
+
+function saveStudentDashboardMetaMap(map) {
+  localStorage.setItem(STUDENT_DASHBOARD_META_KEY, JSON.stringify(map));
+}
+
+function normalizeDashboardFilters(filters = {}) {
+  return {
+    grade: String(filters.grade ?? ''),
+    subject: String(filters.subject ?? ''),
+    difficulty: String(filters.difficulty ?? ''),
+    topicId: String(filters.topicId ?? ''),
+    search: String(filters.search ?? '')
+  };
+}
+
+function normalizeDashboardMeta(meta = {}) {
+  return {
+    streak: Number.isFinite(Number(meta.streak)) ? Math.max(0, Number(meta.streak)) : 0,
+    lastAttemptDate: meta.lastAttemptDate ? String(meta.lastAttemptDate) : null,
+    lastFilters: normalizeDashboardFilters(meta.lastFilters)
+  };
+}
+
+function toDateOnly(value) {
+  if (!value) return null;
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return null;
+  return dt.toISOString().slice(0, 10);
+}
+
+function dayDiff(fromIsoDate, toIsoDate) {
+  if (!fromIsoDate || !toIsoDate) return null;
+  const from = new Date(`${fromIsoDate}T00:00:00.000Z`).getTime();
+  const to = new Date(`${toIsoDate}T00:00:00.000Z`).getTime();
+  return Math.round((to - from) / 86400000);
+}
+
+function updateUserStreak(userId, answeredAt) {
+  if (!userId) return;
+  const map = getStudentDashboardMetaMap();
+  const current = normalizeDashboardMeta(map[userId]);
+  const today = toDateOnly(answeredAt ?? nowIso());
+  const last = toDateOnly(current.lastAttemptDate);
+
+  if (!today) return;
+  const diff = dayDiff(last, today);
+  if (diff === 0) {
+    current.lastAttemptDate = today;
+  } else if (diff === 1) {
+    current.streak += 1;
+    current.lastAttemptDate = today;
+  } else {
+    current.streak = 1;
+    current.lastAttemptDate = today;
+  }
+
+  map[userId] = current;
+  saveStudentDashboardMetaMap(map);
+}
+
+export function getStudentDashboardMeta(userId) {
+  if (!userId) return normalizeDashboardMeta({});
+  const map = getStudentDashboardMetaMap();
+  return normalizeDashboardMeta(map[userId]);
+}
+
+export function saveStudentDashboardMeta(userId, patch = {}) {
+  if (!userId) return normalizeDashboardMeta({});
+  const map = getStudentDashboardMetaMap();
+  const current = normalizeDashboardMeta(map[userId]);
+  const next = normalizeDashboardMeta({
+    ...current,
+    ...patch,
+    lastFilters: patch.lastFilters ? normalizeDashboardFilters(patch.lastFilters) : current.lastFilters
+  });
+  map[userId] = next;
+  saveStudentDashboardMetaMap(map);
+  return next;
+}
+
 export function getAttempts(userId) {
   const stored = parseJson(localStorage.getItem(STORAGE_KEYS.attempts), []);
   const list = Array.isArray(stored) ? stored.map(normalizeAttempt) : [];
@@ -380,6 +467,7 @@ export function addAttempt(attempt) {
   const normalized = normalizeAttempt(attempt);
   list.push(normalized);
   localStorage.setItem(STORAGE_KEYS.attempts, JSON.stringify(list));
+  updateUserStreak(normalized.userId, normalized.answeredAt);
   return normalized;
 }
 

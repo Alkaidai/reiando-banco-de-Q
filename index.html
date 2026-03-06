@@ -46,30 +46,45 @@
         </nav>
 
         <section id="panel-dashboard" class="student-panel">
-          <section class="stats-grid">
-            <article class="stat-card"><p>Respondidas</p><strong id="statAnswered">0</strong></article>
-            <article class="stat-card"><p>Acertos</p><strong id="statCorrect">0</strong></article>
-            <article class="stat-card"><p>Aproveitamento</p><strong id="statRate">0%</strong></article>
+          <section class="stats-grid student-metrics-grid">
+            <article class="stat-card"><p>Questões resolvidas</p><strong id="statAnswered">0</strong></article>
+            <article class="stat-card"><p>Acertos</p><strong id="statRate">0%</strong></article>
+            <article class="stat-card"><p>Sequência de dias</p><strong id="statStreak">0</strong></article>
+            <article class="stat-card"><p>Pendências de revisão</p><strong id="statPending">0</strong></article>
           </section>
 
           <section id="dashboardEmpty" class="card">
             <p>Comece respondendo questões.</p>
           </section>
 
-          <section id="dashboardData" class="hidden">
+          <section id="dashboardData" class="dashboard-grid hidden">
+            <article class="card" id="continueBlock">
+              <h3>Continuar de onde parei</h3>
+              <p id="lastFiltersSummary" class="muted">Nenhum filtro salvo ainda.</p>
+              <div class="actions-row">
+                <button id="continueTrainingBtn" class="btn-primary">Continuar treino</button>
+                <button id="newTrainingBtn" class="btn-secondary">Novo treino</button>
+              </div>
+            </article>
+
             <article class="card" id="recommendedTrainingBlock">
-              <h3>📌 Treino recomendado</h3>
+              <h3>Treino recomendado</h3>
               <div id="recommendedTrainingContent"></div>
             </article>
 
             <article class="card">
-              <h3>Tópicos mais fracos</h3>
-              <ul id="weakTopics"></ul>
+              <h3>Tópicos fracos (Top 5)</h3>
+              <div id="weakTopics"></div>
             </article>
 
             <article class="card">
               <h3>Revisar agora (últimas 10 erradas)</h3>
               <div id="reviewNow"></div>
+            </article>
+
+            <article class="card dashboard-full-width">
+              <h3>Histórico recente (últimas 20 tentativas)</h3>
+              <div id="recentHistory"></div>
             </article>
           </section>
         </section>

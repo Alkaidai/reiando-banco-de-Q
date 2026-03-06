@@ -10,9 +10,11 @@ import {
   getNotebook,
   getTopics,
   getTrainingPlanById,
+  getStudentDashboardMeta,
   initStorageFromSeeds,
   loadQuestionBank,
   logout,
+  saveStudentDashboardMeta,
   setCurrentUser,
   upsertNotebookItem
 } from './storage.js';
@@ -86,6 +88,73 @@ function dashboardMetrics() {
   return { attempts, answered, correct, rate };
 }
 
+
+function summarizeFilters(filters, topicsMap) {
+  const parts = [];
+  if (filters.grade) parts.push(filters.grade);
+  if (filters.subject) parts.push(subjectLabel(subjectCode(filters.subject)));
+  if (filters.difficulty) parts.push(difficultyLabel(difficultyCode(filters.difficulty)));
+  if (filters.topicId) parts.push(topicsMap.get(filters.topicId) ?? filters.topicId);
+  if (filters.search) parts.push(`Busca: "${filters.search}"`);
+  return parts.length ? parts.join(' • ') : 'Sem filtros salvos.';
+}
+
+function applyFilters(nextFilters, options = {}) {
+  state.filters = {
+    grade: String(nextFilters?.grade ?? ''),
+    subject: String(nextFilters?.subject ?? ''),
+    difficulty: String(nextFilters?.difficulty ?? ''),
+    topicId: String(nextFilters?.topicId ?? ''),
+    search: String(nextFilters?.search ?? '')
+  };
+
+  document.querySelector('#filterGrade').value = state.filters.grade;
+  document.querySelector('#filterSubject').value = state.filters.subject;
+  document.querySelector('#filterDifficulty').value = state.filters.difficulty;
+  document.querySelector('#filterTopicId').value = state.filters.topicId;
+  document.querySelector('#filterSearch').value = state.filters.search;
+
+  if (options.persist !== false) saveStudentDashboardMeta(currentUserId(), { lastFilters: state.filters });
+  if (options.renderQuestions !== false) renderQuestions();
+}
+
+function generateTrainingFromTopic(topicId) {
+  const user = currentUser();
+  if (!user || !topicId) return;
+  const recommendation = getRecommendedTrainingData(getAttempts(user.username));
+  const fallbackDistribution = { easy: 3, medium: 5, hard: 2 };
+
+  const target = recommendation?.topicId === topicId
+    ? recommendation
+    : { topicId, distribution: fallbackDistribution };
+
+  const questionIds = pickRecommendedQuestions({
+    userId: user.username,
+    topicId,
+    qty: 10,
+    distribution: target.distribution,
+    gradeLevel: user.gradeLevel ?? null
+  });
+
+  if (!questionIds.length) {
+    showToast('Não foi possível gerar treino para este tópico.');
+    return;
+  }
+
+  const created = addTrainingPlan(user.username, {
+    id: uid('tp'),
+    createdAt: new Date().toISOString(),
+    topic: topicId,
+    qty: 10,
+    distribution: target.distribution,
+    questionIds
+  });
+
+  state.recommendation.lastCreatedPlanId = created.id;
+  showToast('Treino criado com sucesso');
+  renderDashboard();
+}
+
 function weakestTopics(attempts) {
   const questions = new Map(loadQuestionBank().map((q) => [q.id, q]));
   const topicMap = new Map(getTopics().map((t) => [t.id, t.name]));
@@ -109,7 +178,7 @@ function weakestTopics(attempts) {
     .filter((item) => item.total > 0)
     .map((item) => ({ ...item, errorRate: Math.round((item.errors / item.total) * 100) }))
     .sort((a, b) => b.errorRate - a.errorRate || b.errors - a.errors)
-    .slice(0, 3);
+    .slice(0, 5);
 }
 
 function getRecommendedTrainingData(attempts) {
@@ -259,24 +328,40 @@ function renderRecommendation(attempts) {
 }
 
 function renderDashboard() {
+  const userId = currentUserId();
   const { attempts, answered, correct, rate } = dashboardMetrics();
+  const notebook = getNotebook(userId);
+  const pendingCount = notebook.filter((item) => item.status === 'pending').length;
+  const meta = getStudentDashboardMeta(userId);
   const hasData = attempts.length > 0;
 
   document.querySelector('#statAnswered').textContent = String(answered);
-  document.querySelector('#statCorrect').textContent = String(correct);
   document.querySelector('#statRate').textContent = `${rate}%`;
+  document.querySelector('#statStreak').textContent = `${meta.streak} dia${meta.streak === 1 ? '' : 's'}`;
+  document.querySelector('#statPending').textContent = String(pendingCount);
 
-  document.querySelector('#dashboardEmpty').classList.toggle('hidden', hasData);
-  document.querySelector('#dashboardData').classList.toggle('hidden', !hasData);
+  document.querySelector('#dashboardEmpty').classList.toggle('hidden', hasData || pendingCount > 0);
+  document.querySelector('#dashboardData').classList.remove('hidden');
 
   renderRecommendation(attempts);
+
+  const topicsMap = new Map(getTopics().map((t) => [t.id, t.name]));
+  document.querySelector('#lastFiltersSummary').textContent = summarizeFilters(meta.lastFilters, topicsMap);
 
   const weak = weakestTopics(attempts);
   document.querySelector('#weakTopics').innerHTML = weak.length
     ? weak
-        .map((item, idx) => `<li>${idx + 1}. ${safeText(item.label)} — erro ${item.errorRate}% (${item.errors}/${item.total})</li>`)
+        .map(
+          (item, idx) => `<div class="review-item">
+            <p><strong>${idx + 1}. ${safeText(item.label)}</strong></p>
+            <small>Erro ${item.errorRate}% (${item.errors}/${item.total})</small>
+            <div class="actions-row">
+              <button class="btn-secondary" data-action="generate-recommended-training" data-topic-id="${item.topicId}">Gerar treino</button>
+            </div>
+          </div>`
+        )
         .join('')
-    : '<li class="muted">Sem dados suficientes.</li>';
+    : '<p class="muted">Sem dados suficientes.</p>';
 
   const questionsById = new Map(loadQuestionBank().map((q) => [q.id, q]));
   const wrongLatest = attempts
@@ -297,6 +382,26 @@ function renderDashboard() {
         })
         .join('')
     : '<p class="muted">Nenhuma questão errada até agora.</p>';
+
+  const recent = [...attempts]
+    .sort((a, b) => new Date(b.answeredAt).getTime() - new Date(a.answeredAt).getTime())
+    .slice(0, 20);
+
+  document.querySelector('#recentHistory').innerHTML = recent.length
+    ? recent
+        .map((attempt) => {
+          const q = questionsById.get(attempt.questionId);
+          const icon = attempt.isCorrect ? '✅' : '❌';
+          return `<div class="history-item">
+            <span class="history-icon">${icon}</span>
+            <div>
+              <p><strong>${safeText(q?.statement?.slice(0, 90) ?? 'Questão removida')}${q?.statement?.length > 90 ? '...' : ''}</strong></p>
+              <small>${formatDate(attempt.answeredAt)} • ${safeText(q?.grade ?? '-')} • ${safeText(subjectLabel(q?.subject ?? '-'))}</small>
+            </div>
+          </div>`;
+        })
+        .join('')
+    : '<p class="muted">Sem tentativas recentes.</p>';
 }
 
 function questionTabPanel(tab, question, answer, user, notebookItem) {
@@ -529,7 +634,9 @@ function bindFilters() {
   ['grade', 'subject', 'difficulty', 'topicId', 'search'].forEach((key) => {
     document.querySelector(`#filter${key.charAt(0).toUpperCase()}${key.slice(1)}`).addEventListener('input', (event) => {
       state.filters[key] = event.target.value.trim();
+      saveStudentDashboardMeta(currentUserId(), { lastFilters: state.filters });
       renderQuestions();
+      renderDashboard();
     });
   });
 }
@@ -703,41 +810,25 @@ function bindDashboardActions() {
     if (event.target.dataset.action === 'refazer') scrollToQuestion(event.target.dataset.questionId);
   });
 
+  document.querySelector('#weakTopics').addEventListener('click', (event) => {
+    if (event.target.dataset.action !== 'generate-recommended-training') return;
+    generateTrainingFromTopic(event.target.dataset.topicId);
+  });
+
   document.querySelector('#recommendedTrainingContent').addEventListener('click', (event) => {
     if (event.target.dataset.action !== 'generate-recommended-training') return;
+    generateTrainingFromTopic(event.target.dataset.topicId);
+  });
 
-    const user = currentUser();
-    if (!user) return;
+  document.querySelector('#continueTrainingBtn').addEventListener('click', () => {
+    const meta = getStudentDashboardMeta(currentUserId());
+    applyFilters(meta.lastFilters, { persist: false, renderQuestions: true });
+    activateTab('panel-questions');
+  });
 
-    const topicId = event.target.dataset.topicId;
-    const recommendation = getRecommendedTrainingData(getAttempts(user.username));
-    if (!recommendation || recommendation.topicId !== topicId) return;
-
-    const questionIds = pickRecommendedQuestions({
-      userId: user.username,
-      topicId,
-      qty: 10,
-      distribution: recommendation.distribution,
-      gradeLevel: user.gradeLevel ?? null
-    });
-
-    if (!questionIds.length) {
-      showToast('Não foi possível gerar treino recomendado agora.');
-      return;
-    }
-
-    const created = addTrainingPlan(user.username, {
-      id: uid('tp'),
-      createdAt: new Date().toISOString(),
-      topic: recommendation.topicId,
-      qty: 10,
-      distribution: recommendation.distribution,
-      questionIds
-    });
-
-    state.recommendation.lastCreatedPlanId = created.id;
-    showToast('Treino criado com sucesso');
-    renderDashboard();
+  document.querySelector('#newTrainingBtn').addEventListener('click', () => {
+    applyFilters({ grade: '', subject: '', difficulty: '', topicId: '', search: '' });
+    activateTab('panel-questions');
   });
 }
 
@@ -762,6 +853,7 @@ function bindAuth() {
     setCurrentUser(user);
     feedback.textContent = '';
     renderAuthState();
+    applyFilters(getStudentDashboardMeta(user.username).lastFilters, { persist: false, renderQuestions: false });
     renderDashboard();
     renderQuestions();
     renderNotebook();
@@ -816,6 +908,8 @@ async function init() {
   bindAuth();
 
   renderAuthState();
+  const user = currentUser();
+  if (user) applyFilters(getStudentDashboardMeta(user.username).lastFilters, { persist: false, renderQuestions: false });
   renderDashboard();
   renderQuestions();
   renderNotebook();

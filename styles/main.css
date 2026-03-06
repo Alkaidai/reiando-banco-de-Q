@@ -401,3 +401,58 @@ button:disabled {
   .top-actions { width: 100%; justify-content: flex-start; }
   .container { margin-top: 14px; }
 }
+
+.student-metrics-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboard-full-width {
+  grid-column: 1 / -1;
+}
+
+.history-item {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-item p {
+  margin: 0;
+}
+
+.history-item small {
+  color: var(--muted);
+}
+
+.history-icon {
+  font-size: .95rem;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+@media (max-width: 960px) {
+  .student-metrics-grid,
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .student-metrics-grid,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
