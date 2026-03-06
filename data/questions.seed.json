@@ -1,0 +1,41 @@
+[
+  {
+    "id": "q_seed_1",
+    "grade": "7EF",
+    "subject": "math",
+    "difficulty": "easy",
+    "topicId": "fracoes",
+    "statement": "Ana comeu 2/5 de uma pizza e João comeu 1/5. Que fração da pizza foi consumida ao todo?",
+    "options": ["1/5", "2/5", "3/5", "4/5"],
+    "correctIndex": 2,
+    "explanation": "Somamos frações com mesmo denominador: 2/5 + 1/5 = 3/5.",
+    "status": "published",
+    "comments": []
+  },
+  {
+    "id": "q_seed_2",
+    "grade": "9EF",
+    "subject": "math",
+    "difficulty": "medium",
+    "topicId": "equacoes-1grau",
+    "statement": "Resolva: 3x - 9 = 12.",
+    "options": ["x = 5", "x = 6", "x = 7", "x = 8"],
+    "correctIndex": 2,
+    "explanation": "3x = 21, então x = 7.",
+    "status": "published",
+    "comments": []
+  },
+  {
+    "id": "q_seed_3",
+    "grade": "1EM",
+    "subject": "physics",
+    "difficulty": "easy",
+    "topicId": "cinematica",
+    "statement": "Um carro percorre 120 km em 2 horas. Qual é sua velocidade média?",
+    "options": ["40 km/h", "50 km/h", "60 km/h", "70 km/h"],
+    "correctIndex": 2,
+    "explanation": "Velocidade média = distância / tempo = 120/2 = 60 km/h.",
+    "status": "published",
+    "comments": []
+  }
+]
