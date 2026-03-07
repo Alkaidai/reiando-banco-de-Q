@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Banco de Questões - Aluno</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="./assets/images/favicon.png" />
+    <link rel="stylesheet" href="./styles/main.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1 class="brand-logo" aria-label="Marca Cadê o Xis">
+        <!-- Trocar por logo em /assets/images/logo.png -->
+        <img class="brand-image" src="./assets/images/logo.png" alt="Logo Cadê o Xis" onerror="this.hidden=true" />
+        <span class="brand-mark">CX</span>
+        <span>Cadê o Xis</span>
+      </h1>
+      <div class="top-actions">
+        <a id="adminLink" class="btn-secondary hidden" href="./admin.html">Administrador</a>
+        <a class="btn-primary" href="./admin.html">Ir para painel do administrador</a>
+        <span id="headerUserState" class="session">Visitante</span>
+        <button id="headerLoginBtn" class="btn-secondary">Entrar</button>
+        <button id="logoutBtn" class="btn-danger hidden">Sair</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section id="loginView" class="auth-card">
+        <h2>Login</h2>
+        <form id="loginForm">
+          <input id="username" placeholder="Usuário" required />
+          <input id="password" type="password" placeholder="Senha" required />
+          <button class="btn-primary" type="submit">Entrar</button>
+        </form>
+        <p id="loginFeedback" class="error-text"></p>
+      </section>
+
+      <section id="appView" class="hidden">
+        <div id="trainingModeBanner" class="card hidden"></div>
+        <nav class="menu student-menu">
+          <button data-tab="panel-dashboard" class="active">Painel</button>
+          <button data-tab="panel-questions">Questões</button>
+          <button data-tab="panel-notebook">Caderno de erros</button>
+        </nav>
+
+        <section id="panel-dashboard" class="student-panel">
+          <section class="stats-grid student-metrics-grid">
+            <article class="stat-card"><p>Questões resolvidas</p><strong id="statAnswered">0</strong></article>
+            <article class="stat-card"><p>Acertos</p><strong id="statRate">0%</strong></article>
+            <article class="stat-card"><p>Sequência de dias</p><strong id="statStreak">0</strong></article>
+            <article class="stat-card"><p>Pendências de revisão</p><strong id="statPending">0</strong></article>
+          </section>
+
+          <section id="dashboardEmpty" class="card">
+            <p>Comece respondendo questões.</p>
+          </section>
+
+          <section id="dashboardData" class="dashboard-grid hidden">
+            <article class="card" id="continueBlock">
+              <h3>Continuar de onde parei</h3>
+              <p id="lastFiltersSummary" class="muted">Nenhum filtro salvo ainda.</p>
+              <div class="actions-row">
+                <button id="continueTrainingBtn" class="btn-primary">Continuar treino</button>
+                <button id="newTrainingBtn" class="btn-secondary">Novo treino</button>
+              </div>
+            </article>
+
+            <article class="card" id="recommendedTrainingBlock">
+              <h3>Treino recomendado</h3>
+              <div id="recommendedTrainingContent"></div>
+            </article>
+
+            <article class="card">
+              <h3>Tópicos fracos (Top 5)</h3>
+              <div id="weakTopics"></div>
+            </article>
+
+            <article class="card">
+              <h3>Revisar agora (últimas 10 erradas)</h3>
+              <div id="reviewNow"></div>
+            </article>
+
+            <article class="card dashboard-full-width">
+              <h3>Histórico recente (últimas 20 tentativas)</h3>
+              <div id="recentHistory"></div>
+            </article>
+          </section>
+        </section>
+
+        <section id="panel-questions" class="student-panel hidden">
+          <section class="filters card">
+            <h3>Filtros</h3>
+            <div class="filter-grid">
+              <select id="filterGrade"></select>
+              <select id="filterSubject"></select>
+              <select id="filterDifficulty"></select>
+              <select id="filterTopicId"></select>
+              <input id="filterSearch" placeholder="Buscar" />
+            </div>
+          </section>
+
+          <section id="questionsList" class="questions-list"></section>
+        </section>
+
+        <section id="panel-notebook" class="student-panel hidden">
+          <article class="card">
+            <h3>Caderno de erros</h3>
+            <div class="filter-grid">
+              <select id="notebookFilterGrade"></select>
+              <select id="notebookFilterSubject"></select>
+              <select id="notebookFilterDifficulty"></select>
+              <select id="notebookFilterTopicId"></select>
+              <select id="notebookFilterStatus">
+                <option value="">Todos os status</option>
+                <option value="pending">Pendente</option>
+                <option value="mastered">Dominado</option>
+              </select>
+            </div>
+            <div id="notebookList"></div>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <div id="toastRoot" class="toast-root"></div>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
