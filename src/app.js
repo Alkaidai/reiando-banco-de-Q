@@ -19,7 +19,7 @@ import {
   upsertNotebookItem
 } from './storage.js';
 import { getLessonsForQuestion, loadLessons, renderLessons } from './lessons.js';
-import { difficultyCode, difficultyLabel, formatDate, optionLetter, safeText, showToast, subjectCode, subjectLabel, uid } from './ui.js';
+import { difficultyCode, difficultyLabel, formatDate, optionLetter, roleLabel, safeText, showToast, statusLabel, subjectCode, subjectLabel, uid } from './ui.js';
 
 const state = {
   answers: {},
@@ -273,7 +273,7 @@ function renderAuthState() {
   document.querySelector('#logoutBtn').classList.toggle('hidden', !loggedIn);
 
   document.querySelector('#headerUserState').textContent = user
-    ? `Logado como ${user.username} (${user.role === 'admin' ? 'admin' : 'aluno'})`
+    ? `Logado como ${user.username} (${roleLabel(user.role)})`
     : 'Visitante';
 }
 
@@ -422,7 +422,7 @@ function questionTabPanel(tab, question, answer, user, notebookItem) {
         ? visibleComments
             .map(
               (comment) => `<div class="comment-item">
-                <p><strong>${safeText(comment.author.username)}</strong> • ${formatDate(comment.createdAt)} • ${comment.status}</p>
+                <p><strong>${safeText(comment.author.username)}</strong> • ${formatDate(comment.createdAt)} • ${statusLabel(comment.status)}</p>
                 <p>${safeText(comment.text)}</p>
                 ${(comment.replies ?? [])
                   .map(
@@ -591,7 +591,7 @@ function renderNotebook() {
           const meta = notebookItemMeta(item, q);
           return `<article class="card notebook-item" data-question-id="${q.id}">
             <h4>${safeText(q.statement)}</h4>
-            <p class="meta">${safeText(meta.grade)} • ${subjectLabel(meta.subject)} • ${difficultyLabel(meta.difficulty)} • ${safeText(notebookTopicLabel(meta.topicId))} • status: ${item.status}</p>
+            <p class="meta">${safeText(meta.grade)} • ${subjectLabel(meta.subject)} • ${difficultyLabel(meta.difficulty)} • ${safeText(notebookTopicLabel(meta.topicId))} • Status: ${statusLabel(item.status)}</p>
             <label>O que eu errei?</label>
             <textarea data-field="whatIErred">${safeText(item.whatIErred)}</textarea>
             <label>Regra / insight</label>

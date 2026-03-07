@@ -14,14 +14,15 @@
     <header class="topbar">
       <h1 class="brand-logo" aria-label="Marca Cadê o Xis">
         <!-- Trocar por logo em /assets/images/logo.png -->
+        <img class="brand-image" src="./assets/images/logo.png" alt="Logo Cadê o Xis" onerror="this.hidden=true" />
         <span class="brand-mark">CX</span>
         <span>Cadê o Xis</span>
       </h1>
       <div class="top-actions">
-        <a id="adminLink" class="btn-secondary hidden" href="./admin.html">Admin</a>
+        <a id="adminLink" class="btn-secondary hidden" href="./admin.html">Administrador</a>
         <a class="btn-primary" href="./admin.html">Ir para painel do administrador</a>
         <span id="headerUserState" class="session">Visitante</span>
-        <button id="headerLoginBtn" class="btn-secondary">Login</button>
+        <button id="headerLoginBtn" class="btn-secondary">Entrar</button>
         <button id="logoutBtn" class="btn-danger hidden">Sair</button>
       </div>
     </header>
@@ -40,7 +41,7 @@
       <section id="appView" class="hidden">
         <div id="trainingModeBanner" class="card hidden"></div>
         <nav class="menu student-menu">
-          <button data-tab="panel-dashboard" class="active">Dashboard</button>
+          <button data-tab="panel-dashboard" class="active">Painel</button>
           <button data-tab="panel-questions">Questões</button>
           <button data-tab="panel-notebook">Caderno de erros</button>
         </nav>
@@ -114,8 +115,8 @@
               <select id="notebookFilterTopicId"></select>
               <select id="notebookFilterStatus">
                 <option value="">Todos os status</option>
-                <option value="pending">pending</option>
-                <option value="mastered">mastered</option>
+                <option value="pending">Pendente</option>
+                <option value="mastered">Dominado</option>
               </select>
             </div>
             <div id="notebookList"></div>

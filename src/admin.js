@@ -27,7 +27,7 @@ import {
   deleteLesson,
   upsertUser
 } from './storage.js';
-import { difficultyCode, difficultyLabel, formatDate, safeText, showToast, subjectCode, subjectLabel, uid } from './ui.js';
+import { difficultyCode, difficultyLabel, formatDate, safeText, showToast, statusLabel, subjectCode, subjectLabel, uid } from './ui.js';
 import { canCreateTopic, createCatalogTopic, deleteCatalogTopic, getTopicsCatalog, subjectFilterOptions, toggleCatalogTopicStatus, updateCatalogTopic } from './topics.js';
 import { importQuestions, normalizeAndValidate, parseCsvFile, parseJsonFile, parsePdfFile } from './importer.js';
 
@@ -95,7 +95,7 @@ function renderQuestionsList() {
         <td>${difficultyLabel(q.difficulty)}</td>
         <td>${safeText(topicMap.get(q.topicId) ?? '-')}</td>
         <td>${safeText(q.statement.slice(0, 80))}${q.statement.length > 80 ? '...' : ''}</td>
-        <td>${q.status}</td>
+        <td>${statusLabel(q.status)}</td>
         <td>
           <button data-action="edit" data-id="${q.id}" class="btn-secondary">Editar</button>
           <button data-action="delete" data-id="${q.id}" class="btn-danger">Excluir</button>
@@ -228,7 +228,7 @@ function renderTopicsPanel() {
       <td>${safeText(topic.name)}</td>
       <td>${subjectLabel(topic.subject)}</td>
       <td>${safeText(topic.grade)}</td>
-      <td>${safeText(topic.status)}</td>
+      <td>${safeText(statusLabel(topic.status))}</td>
       <td>
         <button class="btn-secondary" data-action="edit-topic" data-id="${topic.id}">Editar</button>
         <button class="btn-secondary" data-action="toggle-topic" data-id="${topic.id}">${topic.status === 'active' ? 'Desativar' : 'Reativar'}</button>
@@ -543,7 +543,7 @@ function renderNotebookPanel() {
           const q = questionsMap.get(item.questionId);
           return `<article class="card notebook-item">
             <h4>${safeText(q?.statement ?? item.questionId)}</h4>
-            <p class="meta">${q ? `${q.grade} • ${subjectLabel(q.subject)} • ${difficultyLabel(q.difficulty)}` : 'Questão removida'} • status: ${item.status}</p>
+            <p class="meta">${q ? `${q.grade} • ${subjectLabel(q.subject)} • ${difficultyLabel(q.difficulty)}` : 'Questão removida'} • status: ${statusLabel(item.status)}</p>
             <label>O que eu errei?</label>
             <textarea readonly>${safeText(item.whatIErred)}</textarea>
             <label>Regra / insight</label>
@@ -580,7 +580,7 @@ function renderCommentsPanel() {
             <strong>${safeText(comment.text.slice(0, 60))}${comment.text.length > 60 ? '...' : ''}</strong>
             <span>${safeText(comment.author.username)} • ${formatDate(comment.createdAt)}</span>
             <span>${question.grade} • ${subjectLabel(question.subject)} • ${safeText(topic)}</span>
-            <span>Status: ${comment.status}</span>
+            <span>Status: ${statusLabel(comment.status)}</span>
           </button>`
         )
         .join('')
@@ -608,7 +608,7 @@ function renderSelectedThread() {
     <h4>Thread selecionada</h4>
     <p><strong>Questão:</strong> ${safeText(question.statement)}</p>
     <div class="comment-item">
-      <p><strong>${safeText(comment.author.username)}</strong> • ${formatDate(comment.createdAt)} • ${comment.status}</p>
+      <p><strong>${safeText(comment.author.username)}</strong> • ${formatDate(comment.createdAt)} • ${statusLabel(comment.status)}</p>
       <p>${safeText(comment.text)}</p>
       ${(comment.replies ?? [])
         .map((reply) => `<div class="reply"><strong>${safeText(reply.author.username)}:</strong> ${safeText(reply.text)} <small>${formatDate(reply.createdAt)}</small></div>`)
@@ -658,14 +658,14 @@ function renderReportDetails() {
   const container = document.querySelector('#reportDetails');
   const report = getReports().find((item) => item.id === adminState.selectedReportId);
   if (!report) {
-    container.innerHTML = '<p class="muted">Selecione um report para triagem.</p>';
+    container.innerHTML = '<p class="muted">Selecione um relatório para triagem.</p>';
     return;
   }
 
   const question = loadQuestionBank().find((q) => q.id === report.questionId);
   container.innerHTML = `
-    <h4>Report ${safeText(report.id)}</h4>
-    <p><strong>Status:</strong> ${safeText(report.status)}</p>
+    <h4>Relatório ${safeText(report.id)}</h4>
+    <p><strong>Status:</strong> ${safeText(statusLabel(report.status))}</p>
     <p><strong>Tipo:</strong> ${safeText(report.type)}</p>
     <p><strong>Autor:</strong> ${safeText(report.createdBy?.username ?? '-')} • ${formatDate(report.createdAt)}</p>
     <p><strong>Mensagem:</strong> ${safeText(report.message)}</p>
@@ -695,7 +695,7 @@ function renderReportsPanel() {
           (report) => `<tr>
             <td>${formatDate(report.createdAt)}</td>
             <td>${safeText(report.type)}</td>
-            <td>${safeText(report.status)}</td>
+            <td>${safeText(statusLabel(report.status))}</td>
             <td>${safeText(report.questionMeta?.grade ?? '-')} / ${safeText(subjectLabel(report.questionMeta?.subject ?? '-'))} / ${safeText(report.questionMeta?.topic ?? '-')}</td>
             <td>${safeText((report.questionMeta?.preview ?? '').slice(0, 80))}</td>
             <td>${safeText(report.createdBy?.username ?? '-')}</td>
@@ -703,7 +703,7 @@ function renderReportsPanel() {
           </tr>`
         )
         .join('')
-    : '<tr><td colspan="7" class="muted">Nenhum report para os filtros atuais.</td></tr>';
+    : '<tr><td colspan="7" class="muted">Nenhum relatório para os filtros atuais.</td></tr>';
 
   renderReportDetails();
 }
@@ -717,12 +717,12 @@ function renderImportPreview() {
   const rows = [...valid.map((item) => ({ ...item, __ok: true })), ...invalid.map((item) => ({ ...item.mapped, __ok: false, __errors: item.errors }))];
 
   preview.innerHTML = rows.length
-    ? `<table class="table"><thead><tr><th>Status</th><th>Série</th><th>Disciplina</th><th>Dificuldade</th><th>Tópico</th><th>Enunciado</th><th>Correta</th><th>Status pub.</th></tr></thead><tbody>${rows
+    ? `<table class="table"><thead><tr><th>Status</th><th>Série</th><th>Disciplina</th><th>Dificuldade</th><th>Tópico</th><th>Enunciado</th><th>Correta</th><th>Status de publicação</th></tr></thead><tbody>${rows
         .map(
-          (q, idx) => `<tr data-idx="${idx}" data-valid="${q.__ok ? '1' : '0'}"><td>${q.__ok ? 'OK' : 'ERRO'}</td><td>${safeText(q.grade)}</td><td>${safeText(subjectLabel(q.subject))}</td><td>${safeText(difficultyLabel(q.difficulty))}</td><td>${safeText(q.topic)}</td><td>${safeText((q.statement ?? '').slice(0, 90))}</td><td>${String.fromCharCode(65 + (q.correctIndex ?? 0))}</td><td>${safeText(q.status)}</td></tr>`
+          (q, idx) => `<tr data-idx="${idx}" data-valid="${q.__ok ? '1' : '0'}"><td>${q.__ok ? 'OK' : 'ERRO'}</td><td>${safeText(q.grade)}</td><td>${safeText(subjectLabel(q.subject))}</td><td>${safeText(difficultyLabel(q.difficulty))}</td><td>${safeText(q.topic)}</td><td>${safeText((q.statement ?? '').slice(0, 90))}</td><td>${String.fromCharCode(65 + (q.correctIndex ?? 0))}</td><td>${safeText(statusLabel(q.status))}</td></tr>`
         )
         .join('')}</tbody></table>`
-    : '<p class="muted">Sem dados para preview.</p>';
+    : '<p class="muted">Sem dados para visualização.</p>';
 
   errors.innerHTML = invalid.length
     ? invalid
@@ -748,7 +748,7 @@ async function readImportFile() {
     if (format === 'pdf') raw = await parsePdfFile(file);
     const normalized = normalizeAndValidate(raw);
     adminState.importer = { format, ...normalized };
-    feedback.textContent = `Preview carregado: ${normalized.valid.length} válidas, ${normalized.invalid.length} inválidas.`;
+    feedback.textContent = `Visualização carregada: ${normalized.valid.length} válidas, ${normalized.invalid.length} inválidas.`;
     renderImportPreview();
   } catch (error) {
     feedback.textContent = `Falha ao processar arquivo: ${error.message}`;

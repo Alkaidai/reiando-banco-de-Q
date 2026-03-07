@@ -63,3 +63,32 @@ export function showToast(message) {
     setTimeout(() => toast.remove(), 220);
   }, 2200);
 }
+
+
+const STATUS_LABELS = {
+  draft: 'Rascunho',
+  published: 'Publicado',
+  active: 'Ativo',
+  inactive: 'Inativo',
+  blocked: 'Bloqueado',
+  pending: 'Pendente',
+  mastered: 'Dominado',
+  open: 'Em aberto',
+  answered: 'Respondido',
+  hidden: 'Oculto',
+  resolved: 'Resolvido',
+  ignored: 'Ignorado'
+};
+
+const ROLE_LABELS = {
+  admin: 'administrador',
+  student: 'aluno'
+};
+
+export function statusLabel(value) {
+  return STATUS_LABELS[value] ?? value;
+}
+
+export function roleLabel(value) {
+  return ROLE_LABELS[value] ?? value;
+}

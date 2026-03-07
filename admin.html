@@ -14,6 +14,7 @@
     <header class="topbar">
       <h1 class="brand-logo" aria-label="Marca Cadê o Xis">
         <!-- Trocar por logo em /assets/images/logo.png -->
+        <img class="brand-image" src="./assets/images/logo.png" alt="Logo Cadê o Xis" onerror="this.hidden=true" />
         <span class="brand-mark">CX</span>
         <span>Cadê o Xis</span>
       </h1>
@@ -26,7 +27,7 @@
 
     <main class="container">
       <section id="loginBlock" class="auth-card">
-        <h2>Login admin</h2>
+        <h2>Entrar como administrador</h2>
         <form id="adminLoginForm">
           <input id="adminUser" placeholder="Usuário" required />
           <input id="adminPass" type="password" placeholder="Senha" required />
@@ -37,7 +38,7 @@
 
       <section id="adminApp" class="hidden">
         <nav class="menu">
-          <button data-panel="dashboard" class="active">Dashboard</button>
+          <button data-panel="dashboard" class="active">Painel</button>
           <button data-panel="questions">Questões</button>
           <button data-panel="users">Usuários</button>
           <button data-panel="notebook">Caderno</button>
@@ -49,7 +50,7 @@
         </nav>
 
         <section id="dashboard" class="panel card">
-          <h2>Dashboard</h2>
+          <h2>Painel</h2>
           <div id="adminDashboardCards" class="admin-stats-grid"></div>
           <article class="card">
             <h3>Usuários com pior aproveitamento</h3>
@@ -93,7 +94,7 @@
             <h2>Questões</h2>
             <div class="actions-row">
               <button id="newQuestionBtn" class="btn-secondary">Nova questão</button>
-              <button id="resetSeedBtn" class="btn-danger">Reset seed</button>
+              <button id="resetSeedBtn" class="btn-danger">Reiniciar dados</button>
             </div>
           </div>
 
@@ -103,7 +104,7 @@
             <select id="qSubject"></select>
             <select id="qDifficulty"></select>
             <select id="qTopic"></select>
-            <select id="qStatus"><option value="published">published</option><option value="draft">draft</option></select>
+            <select id="qStatus"><option value="published">Publicado</option><option value="draft">Rascunho</option></select>
 
             <label for="qStatement">Enunciado</label>
             <textarea id="qStatement" placeholder="Exemplo:
@@ -145,8 +146,8 @@ Qual é o resultado de 3/4 + 1/4?" required></textarea>
               <form id="userForm" class="question-form">
                 <input id="uUsername" placeholder="Username" required />
                 <input id="uPassword" placeholder="Senha" required />
-                <select id="uRole"><option value="student">student</option><option value="admin">admin</option></select>
-                <select id="uStatus"><option value="active">active</option><option value="blocked">blocked</option></select>
+                <select id="uRole"><option value="student">aluno</option><option value="admin">administrador</option></select>
+                <select id="uStatus"><option value="active">ativo</option><option value="blocked">bloqueado</option></select>
                 <select id="uGradeLevel">
                   <option value="">Nenhuma</option>
                   <option value="7EF">7EF</option>
@@ -206,8 +207,8 @@ Qual é o resultado de 3/4 + 1/4?" required></textarea>
             <select id="topicSubject"></select>
             <select id="topicGrade"></select>
             <select id="topicStatus">
-              <option value="active">active</option>
-              <option value="inactive">inactive</option>
+              <option value="active">ativo</option>
+              <option value="inactive">inativo</option>
             </select>
             <button class="btn-primary" type="submit">Salvar tópico</button>
             <p id="topicFormFeedback" class="error-text"></p>
@@ -219,8 +220,8 @@ Qual é o resultado de 3/4 + 1/4?" required></textarea>
             </select>
             <select id="topicFilterStatus">
               <option value="all">Todos status</option>
-              <option value="active">active</option>
-              <option value="inactive">inactive</option>
+              <option value="active">ativo</option>
+              <option value="inactive">inativo</option>
             </select>
             <input id="topicFilterSearch" placeholder="Buscar tópico" />
           </div>
@@ -260,12 +261,12 @@ Qual é o resultado de 3/4 + 1/4?" required></textarea>
           <div class="comments-admin-grid">
             <div>
               <table class="table">
-                <thead><tr><th>Data</th><th>Tipo</th><th>Status</th><th>Série/Disciplina/Tópico</th><th>Preview</th><th>Autor</th><th>Ação</th></tr></thead>
+                <thead><tr><th>Data</th><th>Tipo</th><th>Status</th><th>Série/Disciplina/Tópico</th><th>Prévia</th><th>Autor</th><th>Ação</th></tr></thead>
                 <tbody id="reportsTableBody"></tbody>
               </table>
             </div>
             <div id="reportDetails" class="thread-details">
-              <p class="muted">Selecione um report para triagem.</p>
+              <p class="muted">Selecione um relatório para triagem.</p>
             </div>
           </div>
         </section>
@@ -281,8 +282,8 @@ Qual é o resultado de 3/4 + 1/4?" required></textarea>
             <input id="importFile" type="file" />
             <label><input type="checkbox" id="importAutoCreateTopics" /> Criar tópicos automaticamente se não existirem</label>
             <select id="importAsStatus">
-              <option value="draft">Importar como draft</option>
-              <option value="published">Importar como published</option>
+              <option value="draft">Importar como rascunho</option>
+              <option value="published">Importar como publicado</option>
             </select>
             <button id="importSubmitBtn" class="btn-primary" disabled>Importar 0 questões</button>
           </div>
