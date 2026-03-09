@@ -38,22 +38,29 @@
 
       <section id="adminApp" class="hidden">
         <nav class="menu admin-menu-groups">
-          <span class="menu-group-label">Visão geral</span>
-          <button data-panel="dashboard" class="active">Painel</button>
+          <div class="menu-group">
+            <button data-panel="dashboard" class="active">Painel</button>
+          </div>
 
-          <span class="menu-group-label">Conteúdo</span>
-          <button data-panel="questions">Questões</button>
-          <button data-panel="lessons">Aulas</button>
-          <button data-panel="cadastros">Tópicos</button>
-          <button data-panel="import">Importar</button>
+          <div class="menu-group">
+            <span class="menu-group-label">Conteúdo:</span>
+            <button data-panel="questions">Questões</button>
+            <button data-panel="lessons">Aulas</button>
+            <button data-panel="cadastros">Tópicos</button>
+            <button data-panel="import">Importar</button>
+          </div>
 
-          <span class="menu-group-label">Pessoas</span>
-          <button data-panel="users">Usuários</button>
-          <button data-panel="comments">Comentários</button>
-          <button data-panel="notebook">Caderno</button>
+          <div class="menu-group">
+            <span class="menu-group-label">Pessoas:</span>
+            <button data-panel="users">Usuários</button>
+            <button data-panel="comments">Comentários</button>
+            <button data-panel="notebook">Caderno</button>
+          </div>
 
-          <span class="menu-group-label">Qualidade</span>
-          <button data-panel="reports">Erros reportados</button>
+          <div class="menu-group">
+            <span class="menu-group-label">Qualidade:</span>
+            <button data-panel="reports">Erros reportados</button>
+          </div>
         </nav>
 
         <section id="dashboard" class="panel card">

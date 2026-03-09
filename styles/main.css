@@ -489,16 +489,33 @@ button:disabled {
 }
 
 
-.admin-menu-groups { align-items: center; gap: 8px; }
+.admin-menu-groups {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.menu-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+}
+
 .menu-group-label {
-  flex-basis: 100%;
-  font-size: .76rem;
+  font-size: .74rem;
   color: var(--muted);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .04em;
-  margin: 6px 0 0;
+  letter-spacing: .03em;
+  margin: 0 2px 0 0;
 }
+
 .lessons-list { display: grid; gap: 8px; }
 .dashboard-scroll {
   max-height: 420px;
