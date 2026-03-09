@@ -12,24 +12,24 @@ export function getLessonsForQuestion(question) {
   if (!question) return [];
   const all = lessonsCache.length ? lessonsCache : getLessons();
 
-  const p1 = all.filter((lesson) => lesson.topic === question.topicId && lesson.subject === question.subject);
-  if (p1.length) return p1;
+  const byTopic = all.filter((lesson) => lesson.topic === question.topicId);
+  if (byTopic.length) return byTopic;
 
-  const p2 = all.filter((lesson) => lesson.subject === question.subject && lesson.grade === question.grade);
-  if (p2.length) return p2;
+  const bySubject = all.filter((lesson) => lesson.subject === question.subject);
+  if (bySubject.length) return bySubject;
 
-  return all.filter((lesson) => lesson.subject === question.subject);
+  return all.filter((lesson) => lesson.grade === question.grade);
 }
 
 export function renderLessons(containerEl, lessons) {
   if (!containerEl) return;
 
   if (!Array.isArray(lessons) || !lessons.length) {
-    containerEl.innerHTML = '<p class="muted">Nenhuma aula recomendada para este tópico.</p>';
+    containerEl.innerHTML = '<p class="muted">Ainda não há aulas cadastradas para este tópico.</p>';
     return;
   }
 
-  containerEl.innerHTML = `<ul>${lessons
-    .map((lesson) => `<li><a href="${safeText(lesson.url)}" target="_blank" rel="noopener noreferrer">▶ ${safeText(lesson.title)}</a></li>`)
-    .join('')}</ul>`;
+  containerEl.innerHTML = `<div class="lessons-list">${lessons
+    .map((lesson) => `<article class="review-item"><p><strong>${safeText(lesson.title)}</strong></p><a class="btn-secondary" href="${safeText(lesson.url)}" target="_blank" rel="noopener noreferrer">Assistir</a></article>`)
+    .join('')}</div>`;
 }

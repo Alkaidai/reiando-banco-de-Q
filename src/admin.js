@@ -693,13 +693,18 @@ function renderReportsPanel() {
     ? rows
         .map(
           (report) => `<tr>
-            <td>${formatDate(report.createdAt)}</td>
-            <td>${safeText(report.type)}</td>
-            <td>${safeText(statusLabel(report.status))}</td>
-            <td>${safeText(report.questionMeta?.grade ?? '-')} / ${safeText(subjectLabel(report.questionMeta?.subject ?? '-'))} / ${safeText(report.questionMeta?.topic ?? '-')}</td>
             <td>${safeText((report.questionMeta?.preview ?? '').slice(0, 80))}</td>
+            <td>${safeText(report.type)}</td>
+            <td>${safeText(report.message || '-')}</td>
             <td>${safeText(report.createdBy?.username ?? '-')}</td>
-            <td><button class="btn-secondary" data-action="view-report" data-id="${report.id}">Ver</button></td>
+            <td>${formatDate(report.createdAt)}</td>
+            <td>${safeText(statusLabel(report.status))}</td>
+            <td>
+              <button class=\"btn-secondary\" data-action=\"view-report\" data-id=\"${report.id}\">Detalhes</button>
+              <button class=\"btn-secondary\" data-action=\"open-question-row\" data-question-id=\"${report.questionId}\" data-id=\"${report.id}\">Abrir questão</button>
+              <button class=\"btn-primary\" data-action=\"report-resolve-row\" data-id=\"${report.id}\">Resolver</button>
+              <button class=\"btn-danger\" data-action=\"report-ignore-row\" data-id=\"${report.id}\">Ignorar</button>
+            </td>
           </tr>`
         )
         .join('')
@@ -717,9 +722,9 @@ function renderImportPreview() {
   const rows = [...valid.map((item) => ({ ...item, __ok: true })), ...invalid.map((item) => ({ ...item.mapped, __ok: false, __errors: item.errors }))];
 
   preview.innerHTML = rows.length
-    ? `<table class="table"><thead><tr><th>Status</th><th>Série</th><th>Disciplina</th><th>Dificuldade</th><th>Tópico</th><th>Enunciado</th><th>Correta</th><th>Status de publicação</th></tr></thead><tbody>${rows
+    ? `<table class="table"><thead><tr><th>Status</th><th>Série</th><th>Disciplina</th><th>Tópico</th><th>Enunciado</th><th>Alternativas</th><th>Resposta</th><th>Status de publicação</th></tr></thead><tbody>${rows
         .map(
-          (q, idx) => `<tr data-idx="${idx}" data-valid="${q.__ok ? '1' : '0'}"><td>${q.__ok ? 'OK' : 'ERRO'}</td><td>${safeText(q.grade)}</td><td>${safeText(subjectLabel(q.subject))}</td><td>${safeText(difficultyLabel(q.difficulty))}</td><td>${safeText(q.topic)}</td><td>${safeText((q.statement ?? '').slice(0, 90))}</td><td>${String.fromCharCode(65 + (q.correctIndex ?? 0))}</td><td>${safeText(statusLabel(q.status))}</td></tr>`
+          (q, idx) => `<tr data-idx="${idx}" data-valid="${q.__ok ? '1' : '0'}"><td>${q.__ok ? 'OK' : 'ERRO'}</td><td>${safeText(q.grade)}</td><td>${safeText(subjectLabel(q.subject))}</td><td>${safeText(q.topic)}</td><td>${safeText((q.statement ?? '').slice(0, 90))}</td><td>${Array.isArray(q.options) ? safeText(q.options.map((opt, i) => `${String.fromCharCode(65 + i)}) ${opt}`).join(' | ').slice(0, 140)) : '-'}</td><td>${String.fromCharCode(65 + (q.correctIndex ?? 0))}</td><td>${safeText(statusLabel(q.status))}</td></tr>`
         )
         .join('')}</tbody></table>`
     : '<p class="muted">Sem dados para visualização.</p>';
@@ -781,6 +786,13 @@ function bindImportPanel() {
     adminState.importer.invalid = [];
     renderImportPreview();
     refreshAdminViews();
+  });
+
+  document.querySelector('#importCancelBtn').addEventListener('click', () => {
+    document.querySelector('#importFile').value = '';
+    document.querySelector('#importFeedback').textContent = 'Importação cancelada.';
+    adminState.importer = { format: document.querySelector('#importFormat').value, valid: [], invalid: [] };
+    renderImportPreview();
   });
 }
 
@@ -1134,9 +1146,34 @@ function bindReports() {
   });
 
   document.querySelector('#reportsTableBody').addEventListener('click', (event) => {
-    if (event.target.dataset.action !== 'view-report') return;
-    adminState.selectedReportId = event.target.dataset.id;
-    renderReportDetails();
+    const action = event.target.dataset.action;
+    const reportId = event.target.dataset.id;
+    if (!reportId) return;
+
+    if (action === 'view-report') {
+      adminState.selectedReportId = reportId;
+      renderReportDetails();
+      return;
+    }
+
+    if (action === 'open-question-row') {
+      adminState.highlightedQuestionId = event.target.dataset.questionId;
+      setActivePanel('questions');
+      renderQuestionsList();
+      return;
+    }
+
+    const admin = getCurrentUser();
+    if (action === 'report-resolve-row') {
+      setReportStatus(reportId, 'resolved', '', { username: admin?.username ?? 'admin', role: 'admin' });
+      renderReportsPanel();
+      return;
+    }
+
+    if (action === 'report-ignore-row') {
+      setReportStatus(reportId, 'ignored', '', { username: admin?.username ?? 'admin', role: 'admin' });
+      renderReportsPanel();
+    }
   });
 
   document.querySelector('#reportDetails').addEventListener('click', (event) => {

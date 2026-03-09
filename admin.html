@@ -37,14 +37,17 @@
       </section>
 
       <section id="adminApp" class="hidden">
-        <nav class="menu">
+        <nav class="menu admin-menu-groups">
           <button data-panel="dashboard" class="active">Painel</button>
+          <span class="menu-group-label">Conteúdo</span>
           <button data-panel="questions">Questões</button>
+          <button data-panel="lessons">Aulas</button>
+          <button data-panel="cadastros">Tópicos</button>
+          <span class="menu-group-label">Pessoas</span>
           <button data-panel="users">Usuários</button>
           <button data-panel="notebook">Caderno</button>
           <button data-panel="comments">Comentários</button>
-          <button data-panel="lessons">Aulas</button>
-          <button data-panel="cadastros">Cadastros</button>
+          <span class="menu-group-label">Qualidade</span>
           <button data-panel="reports">Erros reportados</button>
           <button data-panel="import">Importar</button>
         </nav>
@@ -261,7 +264,7 @@ Qual é o resultado de 3/4 + 1/4?" required></textarea>
           <div class="comments-admin-grid">
             <div>
               <table class="table">
-                <thead><tr><th>Data</th><th>Tipo</th><th>Status</th><th>Série/Disciplina/Tópico</th><th>Prévia</th><th>Autor</th><th>Ação</th></tr></thead>
+                <thead><tr><th>Questão</th><th>Tipo</th><th>Descrição</th><th>Usuário</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
                 <tbody id="reportsTableBody"></tbody>
               </table>
             </div>
@@ -286,6 +289,7 @@ Qual é o resultado de 3/4 + 1/4?" required></textarea>
               <option value="published">Importar como publicado</option>
             </select>
             <button id="importSubmitBtn" class="btn-primary" disabled>Importar 0 questões</button>
+            <button id="importCancelBtn" class="btn-danger" type="button">Cancelar</button>
           </div>
           <p id="importFeedback" class="muted"></p>
           <div id="importPreview"></div>

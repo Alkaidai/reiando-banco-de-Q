@@ -487,3 +487,14 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+
+.admin-menu-groups { align-items: center; }
+.menu-group-label {
+  font-size: .78rem;
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 0 2px 0 8px;
+}
+.lessons-list { display: grid; gap: 8px; }
